@@ -2,249 +2,47 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy Hub</title>
   <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
+  <script src="/uv.config.js"></script>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      background: #0f1117;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: #f0f6fc;
-      overflow: hidden;
-    }
-    #top-bar {
-      background: #161b22;
-      padding: 12px 20px;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      border-bottom: 1px solid #30363d;
-      flex-shrink: 0;
-    }
-    h1 {
-      margin: 0;
-      font-size: 18px;
-      color: #58a6ff;
-      font-weight: 600;
-    }
-    #search-form {
-      flex-grow: 1;
-      max-width: 600px;
-    }
-    input {
-      width: 100%;
-      padding: 8px 14px;
-      border-radius: 6px;
-      border: 1px solid #30363d;
-      background: #0d1117;
-      color: #f0f6fc;
-      font-size: 14px;
-      outline: none;
-    }
-    input:focus {
-      border-color: #58a6ff;
-    }
-    #status {
-      font-size: 12px;
-      color: #8b949e;
-      margin-left: auto;
-    }
-    iframe {
-      flex-grow: 1;
-      border: none;
-      width: 100%;
-      height: 100%;
-      background: #ffffff;
-    }
+    body { margin: 0; background: #0f1117; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
+    #top-bar { padding: 12px; background: #161b22; display: flex; gap: 10px; }
+    input { flex-grow: 1; padding: 8px; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #fff; }
+    iframe { flex-grow: 1; border: none; background: #fff; }
   </style>
 </head>
 <body>
-
   <div id="top-bar">
-    <h1>Proxy</h1>
-    <form id="search-form" onsubmit="loadURL(event)">
-      <input type="text" id="url-input" placeholder="Type a website URL or search query..." autocomplete="off" autofocus>
+    <form id="form" style="display:flex; width:100%;" onsubmit="loadURL(event)">
+      <input type="text" id="url" placeholder="Search or enter URL..." autocomplete="off">
     </form>
-    <div id="status">Ready (100 Backups Loaded)</div>
   </div>
-
-  <iframe id="proxy-frame"></iframe>
+  <iframe id="frame"></iframe>
 
   <script>
-    // 1. ANNIHILATE THE ZOMBIE SERVICE WORKER CACHE
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for(let registration of registrations) {
-          registration.unregister();
-        }
-      });
-    }
-
-    const input = document.getElementById('url-input');
-    const frame = document.getElementById('proxy-frame');
-    const status = document.getElementById('status');
-
-    // 2. 100 BACKUP ENDPOINTS
-    const gateways = [
-      'https://uv.student-projects.workers.dev/service/',
-      'https://proxy.student-projects.workers.dev/service/',
-      'https://uv.to-be-continued.workers.dev/service/',
-      'https://uv.holyunblocker.workers.dev/service/',
-      'https://incognito.pro/service/',
-      'https://zengarden.org/service/',
-      'https://mathclass.site/service/',
-      'https://sciencehomework.net/service/',
-      'https://englishclass.me/service/',
-      'https://historyproject.site/service/',
-      'https://physicslab.app/service/',
-      'https://chemistryportal.org/service/',
-      'https://algebra.duckdns.org/service/',
-      'https://geometry.duckdns.org/service/',
-      'https://canvas-login.org/service/',
-      'https://classroom-edu.net/service/',
-      'https://edpuzzle-bypass.org/service/',
-      'https://kahoot-cheat.net/service/',
-      'https://quizlet-bypass.org/service/',
-      'https://blooket-hack.net/service/',
-      'https://geography-map.org/service/',
-      'https://literature-hub.net/service/',
-      'https://study-hall.org/service/',
-      'https://homework-helper.net/service/',
-      'https://test-prep.site/service/',
-      'https://proxy1.onrender.com/service/',
-      'https://proxy2.onrender.com/service/',
-      'https://proxy3.onrender.com/service/',
-      'https://unblocker-pro.herokuapp.com/service/',
-      'https://web-bypass.herokuapp.com/service/',
-      'https://stealth-mode.up.railway.app/service/',
-      'https://ghost-browser.up.railway.app/service/',
-      'https://titanium-network.vercel.app/service/',
-      'https://uv-static.vercel.app/service/',
-      'https://bypass-filter.netlify.app/service/',
-      'https://school-unblock.netlify.app/service/',
-      'https://freedom-proxy.surge.sh/service/',
-      'https://access-anywhere.surge.sh/service/',
-      'https://proxy-server-1.duckdns.org/service/',
-      'https://proxy-server-2.duckdns.org/service/',
-      'https://proxy-server-3.duckdns.org/service/',
-      'https://proxy-server-4.duckdns.org/service/',
-      'https://proxy-server-5.duckdns.org/service/',
-      'https://uv-node-1.cyclic.app/service/',
-      'https://uv-node-2.cyclic.app/service/',
-      'https://uv-node-3.cyclic.app/service/',
-      'https://phantom-web.koyeb.app/service/',
-      'https://shadow-browser.koyeb.app/service/',
-      'https://covert-access.koyeb.app/service/',
-      'https://nexus-proxy.fly.dev/service/',
-      'https://aether-proxy.fly.dev/service/',
-      'https://zenith-proxy.fly.dev/service/',
-      'https://apex-bypass.onrender.com/service/',
-      'https://summit-bypass.onrender.com/service/',
-      'https://pinnacle-bypass.onrender.com/service/',
-      'https://vortex-web.up.railway.app/service/',
-      'https://cyclone-web.up.railway.app/service/',
-      'https://typhoon-web.up.railway.app/service/',
-      'https://hurricane-web.up.railway.app/service/',
-      'https://storm-proxy.vercel.app/service/',
-      'https://blizzard-proxy.vercel.app/service/',
-      'https://avalanche-proxy.vercel.app/service/',
-      'https://glacier-proxy.vercel.app/service/',
-      'https://tundra-proxy.netlify.app/service/',
-      'https://taiga-proxy.netlify.app/service/',
-      'https://steppe-proxy.netlify.app/service/',
-      'https://savanna-proxy.netlify.app/service/',
-      'https://oasis-web.surge.sh/service/',
-      'https://mirage-web.surge.sh/service/',
-      'https://dune-web.surge.sh/service/',
-      'https://canyon-web.surge.sh/service/',
-      'https://valley-proxy.duckdns.org/service/',
-      'https://ridge-proxy.duckdns.org/service/',
-      'https://plateau-proxy.duckdns.org/service/',
-      'https://mesa-proxy.duckdns.org/service/',
-      'https://crater-proxy.cyclic.app/service/',
-      'https://caldera-proxy.cyclic.app/service/',
-      'https://magma-proxy.cyclic.app/service/',
-      'https://lava-proxy.cyclic.app/service/',
-      'https://basalt-web.koyeb.app/service/',
-      'https://granite-web.koyeb.app/service/',
-      'https://obsidian-web.koyeb.app/service/',
-      'https://pumice-web.koyeb.app/service/',
-      'https://quartz-proxy.fly.dev/service/',
-      'https://feldspar-proxy.fly.dev/service/',
-      'https://mica-proxy.fly.dev/service/',
-      'https://gypsum-proxy.fly.dev/service/',
-      'https://fluorite-proxy.onrender.com/service/',
-      'https://calcite-proxy.onrender.com/service/',
-      'https://apatite-proxy.onrender.com/service/',
-      'https://topaz-proxy.onrender.com/service/',
-      'https://corundum-web.up.railway.app/service/',
-      'https://diamond-web.up.railway.app/service/',
-      'https://ruby-web.up.railway.app/service/',
-      'https://sapphire-web.up.railway.app/service/',
-      'https://emerald-proxy.vercel.app/service/',
-      'https://amethyst-proxy.vercel.app/service/',
-      'https://opal-proxy.vercel.app/service/',
-      'https://pearl-proxy.vercel.app/service/',
-      'https://garnet-proxy.netlify.app/service/'
-    ];
-
-    let currentGatewayIndex = 0;
-    let currentTargetUrl = "";
-
-    function loadURL(e) {
-      if (e) e.preventDefault();
-      let val = input.value.trim();
+    async function loadURL(e) {
+      e.preventDefault();
+      let val = document.getElementById('url').value.trim();
       if (!val) return;
 
-      status.innerText = "Encoding URL...";
-      currentGatewayIndex = 0; // Reset index for new search
-
-      let targetUrl = val;
-      if (!val.startsWith('http://') && !val.startsWith('https://')) {
-        if (val.includes('.') && !val.includes(' ')) {
-          targetUrl = 'https://' + val;
-        } else {
-          targetUrl = 'https://www.google.com/search?q=' + encodeURIComponent(val);
-        }
+      if (!val.includes('.') || val.includes(' ')) {
+        val = 'https://www.google.com/search?q=' + encodeURIComponent(val);
+      } else if (!val.startsWith('http')) {
+        val = 'https://' + val;
       }
 
-      currentTargetUrl = targetUrl;
-      tryNextGateway();
-    }
-
-    function tryNextGateway() {
-      if (currentGatewayIndex >= gateways.length) {
-        status.innerText = "Critical Error: All 100 gateways failed.";
-        return;
-      }
-
-      status.innerText = `Trying backup ${currentGatewayIndex + 1}/100...`;
-      
+      // Register the service worker properly
       try {
-        const encoded = Ultraviolet.codec.xor.encode(currentTargetUrl);
-        const activeGateway = gateways[currentGatewayIndex];
+        await navigator.serviceWorker.register('/sw.js', { scope: __uv$config.prefix });
         
-        frame.src = activeGateway + encoded;
-
-        frame.onload = () => {
-          // If it loads a dead page, it might not throw a hard error, so we verify
-          status.innerText = `Connected via Backup ${currentGatewayIndex + 1}`;
-        };
-        
-        frame.onerror = () => {
-          currentGatewayIndex++;
-          tryNextGateway();
-        };
+        // Let the service worker intercept the encoded path
+        document.getElementById('frame').src = __uv$config.prefix + __uv$config.encodeUrl(val);
       } catch (err) {
-        status.innerText = "Encoding failed. Check URL formatting.";
+        console.error("Service worker failed to register:", err);
+        alert("Failed to register proxy worker.");
       }
     }
   </script>
-
 </body>
 </html>
