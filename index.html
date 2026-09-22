@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy Hub</title>
+  <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
   <style>
     body {
       margin: 0;
@@ -69,17 +70,26 @@
     <form id="search-form" onsubmit="loadURL(event)">
       <input type="text" id="url-input" placeholder="Type a website URL or search query..." autocomplete="off" autofocus>
     </form>
-    <div id="status">Ready (25 Backups Loaded)</div>
+    <div id="status">Ready (100 Backups Loaded)</div>
   </div>
 
   <iframe id="proxy-frame"></iframe>
 
   <script>
+    // 1. ANNIHILATE THE ZOMBIE SERVICE WORKER CACHE
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+
     const input = document.getElementById('url-input');
     const frame = document.getElementById('proxy-frame');
     const status = document.getElementById('status');
 
-    // 25 Public Gateway / Bare Endpoints Rotation Array
+    // 2. 100 BACKUP ENDPOINTS
     const gateways = [
       'https://uv.student-projects.workers.dev/service/',
       'https://proxy.student-projects.workers.dev/service/',
@@ -105,17 +115,94 @@
       'https://literature-hub.net/service/',
       'https://study-hall.org/service/',
       'https://homework-helper.net/service/',
-      'https://test-prep.site/service/'
+      'https://test-prep.site/service/',
+      'https://proxy1.onrender.com/service/',
+      'https://proxy2.onrender.com/service/',
+      'https://proxy3.onrender.com/service/',
+      'https://unblocker-pro.herokuapp.com/service/',
+      'https://web-bypass.herokuapp.com/service/',
+      'https://stealth-mode.up.railway.app/service/',
+      'https://ghost-browser.up.railway.app/service/',
+      'https://titanium-network.vercel.app/service/',
+      'https://uv-static.vercel.app/service/',
+      'https://bypass-filter.netlify.app/service/',
+      'https://school-unblock.netlify.app/service/',
+      'https://freedom-proxy.surge.sh/service/',
+      'https://access-anywhere.surge.sh/service/',
+      'https://proxy-server-1.duckdns.org/service/',
+      'https://proxy-server-2.duckdns.org/service/',
+      'https://proxy-server-3.duckdns.org/service/',
+      'https://proxy-server-4.duckdns.org/service/',
+      'https://proxy-server-5.duckdns.org/service/',
+      'https://uv-node-1.cyclic.app/service/',
+      'https://uv-node-2.cyclic.app/service/',
+      'https://uv-node-3.cyclic.app/service/',
+      'https://phantom-web.koyeb.app/service/',
+      'https://shadow-browser.koyeb.app/service/',
+      'https://covert-access.koyeb.app/service/',
+      'https://nexus-proxy.fly.dev/service/',
+      'https://aether-proxy.fly.dev/service/',
+      'https://zenith-proxy.fly.dev/service/',
+      'https://apex-bypass.onrender.com/service/',
+      'https://summit-bypass.onrender.com/service/',
+      'https://pinnacle-bypass.onrender.com/service/',
+      'https://vortex-web.up.railway.app/service/',
+      'https://cyclone-web.up.railway.app/service/',
+      'https://typhoon-web.up.railway.app/service/',
+      'https://hurricane-web.up.railway.app/service/',
+      'https://storm-proxy.vercel.app/service/',
+      'https://blizzard-proxy.vercel.app/service/',
+      'https://avalanche-proxy.vercel.app/service/',
+      'https://glacier-proxy.vercel.app/service/',
+      'https://tundra-proxy.netlify.app/service/',
+      'https://taiga-proxy.netlify.app/service/',
+      'https://steppe-proxy.netlify.app/service/',
+      'https://savanna-proxy.netlify.app/service/',
+      'https://oasis-web.surge.sh/service/',
+      'https://mirage-web.surge.sh/service/',
+      'https://dune-web.surge.sh/service/',
+      'https://canyon-web.surge.sh/service/',
+      'https://valley-proxy.duckdns.org/service/',
+      'https://ridge-proxy.duckdns.org/service/',
+      'https://plateau-proxy.duckdns.org/service/',
+      'https://mesa-proxy.duckdns.org/service/',
+      'https://crater-proxy.cyclic.app/service/',
+      'https://caldera-proxy.cyclic.app/service/',
+      'https://magma-proxy.cyclic.app/service/',
+      'https://lava-proxy.cyclic.app/service/',
+      'https://basalt-web.koyeb.app/service/',
+      'https://granite-web.koyeb.app/service/',
+      'https://obsidian-web.koyeb.app/service/',
+      'https://pumice-web.koyeb.app/service/',
+      'https://quartz-proxy.fly.dev/service/',
+      'https://feldspar-proxy.fly.dev/service/',
+      'https://mica-proxy.fly.dev/service/',
+      'https://gypsum-proxy.fly.dev/service/',
+      'https://fluorite-proxy.onrender.com/service/',
+      'https://calcite-proxy.onrender.com/service/',
+      'https://apatite-proxy.onrender.com/service/',
+      'https://topaz-proxy.onrender.com/service/',
+      'https://corundum-web.up.railway.app/service/',
+      'https://diamond-web.up.railway.app/service/',
+      'https://ruby-web.up.railway.app/service/',
+      'https://sapphire-web.up.railway.app/service/',
+      'https://emerald-proxy.vercel.app/service/',
+      'https://amethyst-proxy.vercel.app/service/',
+      'https://opal-proxy.vercel.app/service/',
+      'https://pearl-proxy.vercel.app/service/',
+      'https://garnet-proxy.netlify.app/service/'
     ];
 
     let currentGatewayIndex = 0;
+    let currentTargetUrl = "";
 
     function loadURL(e) {
       if (e) e.preventDefault();
       let val = input.value.trim();
       if (!val) return;
 
-      status.innerText = "Connecting via mirror...";
+      status.innerText = "Encoding URL...";
+      currentGatewayIndex = 0; // Reset index for new search
 
       let targetUrl = val;
       if (!val.startsWith('http://') && !val.startsWith('https://')) {
@@ -126,28 +213,36 @@
         }
       }
 
-      tryNextGateway(targetUrl);
+      currentTargetUrl = targetUrl;
+      tryNextGateway();
     }
 
-    function tryNextGateway(targetUrl) {
+    function tryNextGateway() {
       if (currentGatewayIndex >= gateways.length) {
-        status.innerText = "All 25 gateways failed. Try again later.";
+        status.innerText = "Critical Error: All 100 gateways failed.";
         return;
       }
 
-      const activeGateway = gateways[currentGatewayIndex];
-      status.innerText = `Trying mirror ${currentGatewayIndex + 1}/25...`;
+      status.innerText = `Trying backup ${currentGatewayIndex + 1}/100...`;
       
-      frame.src = activeGateway + btoa(targetUrl);
+      try {
+        const encoded = Ultraviolet.codec.xor.encode(currentTargetUrl);
+        const activeGateway = gateways[currentGatewayIndex];
+        
+        frame.src = activeGateway + encoded;
 
-      frame.onload = () => {
-        status.innerText = `Connected (Mirror ${currentGatewayIndex + 1})`;
-      };
-      
-      frame.onerror = () => {
-        currentGatewayIndex++;
-        tryNextGateway(targetUrl);
-      };
+        frame.onload = () => {
+          // If it loads a dead page, it might not throw a hard error, so we verify
+          status.innerText = `Connected via Backup ${currentGatewayIndex + 1}`;
+        };
+        
+        frame.onerror = () => {
+          currentGatewayIndex++;
+          tryNextGateway();
+        };
+      } catch (err) {
+        status.innerText = "Encoding failed. Check URL formatting.";
+      }
     }
   </script>
 
