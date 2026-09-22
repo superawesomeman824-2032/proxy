@@ -6,7 +6,6 @@
   <title>Proxy Hub</title>
   <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
   <script>
-    // Automatically detect GitHub Pages repository subfolder path
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
     const repoSubpath = (window.location.hostname.includes('github.io') && pathSegments.length > 0) 
       ? '/' + pathSegments[0] + '/' 
@@ -14,90 +13,65 @@
 
     window.__uv$config = {
       prefix: repoSubpath + 'uv/service/',
-      bare: 'https://bare-server-y5ch.onrender.com/bare/', // Your Private Render Server[cite: 2]
+      bare: 'https://bare-server-y5ch.onrender.com/bare/',
       encodeUrl: Ultraviolet.codec.xor.encode,
       decodeUrl: Ultraviolet.codec.xor.decode,
       handler: 'https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.handler.js',
       client: 'https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.client.js',
       bundle: 'https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js',
       config: repoSubpath + 'uv.config.js',
-      sw: 'https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.sw.js',
+      sw: repoSubpath + 'sw.js',
     };
   </script>
   <style>
-    body {
-      margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh;
-      background: #0f1117; font-family: sans-serif; color: #f0f6fc; overflow: hidden;
-    }
-    #top-bar {
-      background: #161b22; padding: 12px 20px; display: flex; align-items: center; gap: 15px;
-      border-bottom: 1px solid #30363d; flex-shrink: 0;
-    }
+    body { margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #0f1117; font-family: sans-serif; color: #f0f6fc; overflow: hidden; }
+    #top-bar { background: #161b22; padding: 12px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #30363d; flex-shrink: 0; }
     h1 { margin: 0; font-size: 18px; color: #58a6ff; }
     #search-form { flex-grow: 1; max-width: 600px; }
-    input {
-      width: 100%; padding: 8px 14px; border-radius: 6px; border: 1px solid #30363d;
-      background: #0d1117; color: #f0f6fc; outline: none; font-size: 14px;
-    }
+    input { width: 100%; padding: 8px 14px; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #f0f6fc; outline: none; font-size: 14px; }
     input:focus { border-color: #58a6ff; }
-    #status { font-size: 12px; color: #8b949e; margin-left: auto; max-width: 350px; text-align: right; }
+    #status { font-size: 12px; color: #8b949e; margin-left: auto; }
     iframe { flex-grow: 1; border: none; width: 100%; height: 100%; background: #fff; }
   </style>
 </head>
 <body>
-
   <div id="top-bar">
     <h1>Proxy Hub</h1>
     <form id="search-form" onsubmit="loadURL(event)">
       <input type="text" id="url-input" placeholder="Type a website URL or search query..." autocomplete="off" autofocus>
     </form>
-    <div id="status">Ready</div>
+    <div id="status">Initializing...</div>
   </div>
-
   <iframe id="proxy-frame"></iframe>
-
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+    async function registerSW() {
+      if (!('serviceWorker' in navigator)) return;
+      try {
+        await navigator.serviceWorker.register('./sw.js', { scope: window.__uv$config.prefix });
+        await navigator.serviceWorker.ready;
+        document.getElementById('status').innerText = "Connected";
+        document.getElementById('status').style.color = "#3fb950";
+      } catch (err) {
+        console.error("SW error:", err);
+        document.getElementById('status').innerText = "Connection Error";
+      }
     }
-
-    const input = document.getElementById('url-input');
-    const frame = document.getElementById('proxy-frame');
-    const status = document.getElementById('status');
+    registerSW();
 
     async function loadURL(e) {
       if (e) e.preventDefault();
-      let val = input.value.trim();
+      let val = document.getElementById('url-input').value.trim();
       if (!val) return;
 
       let targetUrl = val.startsWith('http://') || val.startsWith('https://') 
         ? val 
         : (val.includes('.') && !val.includes(' ') ? 'https://' + val : 'https://www.google.com/search?q=' + encodeURIComponent(val));
 
-      status.style.color = "#8b949e";
-      status.innerText = "Connecting (Render server waking up if sleeping)...";
+      document.getElementById('status').innerText = "Loading...";
+      await navigator.serviceWorker.ready;
 
-      if ('serviceWorker' in navigator) {
-        try {
-          // Register service worker at the root scope of the repo
-          await navigator.serviceWorker.register('./sw.js', { scope: window.__uv$config.prefix });
-        } catch (err) {
-          console.warn("SW error:", err);
-        }
-      }
-
-      try {
-        const encoded = Ultraviolet.codec.xor.encode(targetUrl);
-        frame.src = window.__uv$config.prefix + encoded;
-        
-        frame.onload = () => {
-          status.style.color = "#3fb950";
-          status.innerText = "Connected";
-        };
-      } catch (err) {
-        status.style.color = "#ff7b72";
-        status.innerText = "Error loading URL.";
-      }
+      const encoded = Ultraviolet.codec.xor.encode(targetUrl);
+      document.getElementById('proxy-frame').src = window.__uv$config.prefix + encoded;
     }
   </script>
 </body>
