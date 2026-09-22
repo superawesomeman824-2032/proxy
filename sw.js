@@ -5,6 +5,9 @@ importScripts('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2
 
 const uv = new UVServiceWorker();
 
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', () => self.clients.claim());
+
 self.addEventListener('fetch', (event) => {
     event.respondWith(
         (async () => {
