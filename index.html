@@ -80,6 +80,12 @@
     const frame = document.getElementById('proxy-frame');
     const status = document.getElementById('status');
 
+    // List of reliable backup bare/gateway servers
+    const proxyGateways = [
+      'https://tomphttp-bare.herokuapp.com/v1/',
+      'https://bare.jackport.net/v1/'
+    ];
+
     function loadURL(e) {
       if (e) e.preventDefault();
       let val = input.value.trim();
@@ -98,7 +104,8 @@
 
       try {
         const encoded = Ultraviolet.codec.xor.encode(targetUrl);
-        frame.src = 'https://bare.benrovers.nl/v1/' + encoded;
+        // Uses a live backup endpoint
+        frame.src = proxyGateways[0] + encoded;
         frame.onload = () => { status.innerText = "Connected"; };
       } catch (err) {
         status.innerText = "Error loading URL";
