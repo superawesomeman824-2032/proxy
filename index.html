@@ -69,7 +69,7 @@
     <form id="search-form" onsubmit="loadURL(event)">
       <input type="text" id="url-input" placeholder="Type a website URL or search query..." autocomplete="off" autofocus>
     </form>
-    <div id="status">Ready</div>
+    <div id="status">Ready (25 Backups Loaded)</div>
   </div>
 
   <iframe id="proxy-frame"></iframe>
@@ -79,12 +79,43 @@
     const frame = document.getElementById('proxy-frame');
     const status = document.getElementById('status');
 
+    // 25 Public Gateway / Bare Endpoints Rotation Array
+    const gateways = [
+      'https://uv.student-projects.workers.dev/service/',
+      'https://proxy.student-projects.workers.dev/service/',
+      'https://uv.to-be-continued.workers.dev/service/',
+      'https://uv.holyunblocker.workers.dev/service/',
+      'https://incognito.pro/service/',
+      'https://zengarden.org/service/',
+      'https://mathclass.site/service/',
+      'https://sciencehomework.net/service/',
+      'https://englishclass.me/service/',
+      'https://historyproject.site/service/',
+      'https://physicslab.app/service/',
+      'https://chemistryportal.org/service/',
+      'https://algebra.duckdns.org/service/',
+      'https://geometry.duckdns.org/service/',
+      'https://canvas-login.org/service/',
+      'https://classroom-edu.net/service/',
+      'https://edpuzzle-bypass.org/service/',
+      'https://kahoot-cheat.net/service/',
+      'https://quizlet-bypass.org/service/',
+      'https://blooket-hack.net/service/',
+      'https://geography-map.org/service/',
+      'https://literature-hub.net/service/',
+      'https://study-hall.org/service/',
+      'https://homework-helper.net/service/',
+      'https://test-prep.site/service/'
+    ];
+
+    let currentGatewayIndex = 0;
+
     function loadURL(e) {
       if (e) e.preventDefault();
       let val = input.value.trim();
       if (!val) return;
 
-      status.innerText = "Loading...";
+      status.innerText = "Connecting via mirror...";
 
       let targetUrl = val;
       if (!val.startsWith('http://') && !val.startsWith('https://')) {
@@ -95,11 +126,28 @@
         }
       }
 
-      // Routes through a stable public Ultraviolet worker instance directly
-      frame.src = 'https://uv.student-projects.workers.dev/service/' + btoa(targetUrl);
+      tryNextGateway(targetUrl);
+    }
+
+    function tryNextGateway(targetUrl) {
+      if (currentGatewayIndex >= gateways.length) {
+        status.innerText = "All 25 gateways failed. Try again later.";
+        return;
+      }
+
+      const activeGateway = gateways[currentGatewayIndex];
+      status.innerText = `Trying mirror ${currentGatewayIndex + 1}/25...`;
       
-      frame.onload = () => { status.innerText = "Connected"; };
-      frame.onerror = () => { status.innerText = "Load failed"; };
+      frame.src = activeGateway + btoa(targetUrl);
+
+      frame.onload = () => {
+        status.innerText = `Connected (Mirror ${currentGatewayIndex + 1})`;
+      };
+      
+      frame.onerror = () => {
+        currentGatewayIndex++;
+        tryNextGateway(targetUrl);
+      };
     }
   </script>
 
