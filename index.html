@@ -95,10 +95,11 @@
         }
       }
 
-      // Direct service gateway routing to bypass dead bare servers
+      // Routes through a stable public Ultraviolet worker instance directly
       frame.src = 'https://uv.student-projects.workers.dev/service/' + btoa(targetUrl);
+      
       frame.onload = () => { status.innerText = "Connected"; };
-      frame.onerror = () => { status.innerText = "Failed to load"; };
+      frame.onerror = () => { status.innerText = "Load failed"; };
     }
   </script>
 
