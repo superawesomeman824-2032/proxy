@@ -6,10 +6,10 @@
   <title>Proxy Hub</title>
   <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
   <script>
-    // Inlined configuration so it can NEVER be "not defined"
+    // Inlined configuration guarantees __uv$config is ALWAYS defined instantly
     window.__uv$config = {
       prefix: './uv/service/',
-      bare: 'https://bare-server-y5ch.onrender.com/bare/', //[cite: 2]
+      bare: 'https://bare-server-y5ch.onrender.com/bare/', // Primary Private Render Server[cite: 2]
       encodeUrl: Ultraviolet.codec.xor.encode,
       decodeUrl: Ultraviolet.codec.xor.decode,
       handler: 'https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.handler.js',
@@ -35,7 +35,7 @@
       background: #0d1117; color: #f0f6fc; outline: none; font-size: 14px;
     }
     input:focus { border-color: #58a6ff; }
-    #status { font-size: 12px; color: #8b949e; margin-left: auto; }
+    #status { font-size: 12px; color: #8b949e; margin-left: auto; max-width: 350px; text-align: right; }
     iframe { flex-grow: 1; border: none; width: 100%; height: 100%; background: #fff; }
   </style>
 </head>
@@ -46,7 +46,7 @@
     <form id="search-form" onsubmit="loadURL(event)">
       <input type="text" id="url-input" placeholder="Type a website URL or search query..." autocomplete="off" autofocus>
     </form>
-    <div id="status">Ready</div>
+    <div id="status">Ready (Multi-Fallback Active)</div>
   </div>
 
   <iframe id="proxy-frame"></iframe>
@@ -60,31 +60,74 @@
     const frame = document.getElementById('proxy-frame');
     const status = document.getElementById('status');
 
+    // MULTIPLE BARE SERVER FALLBACK LIST
+    const bareServers = [
+      'https://bare-server-y5ch.onrender.com/bare/', // Your Private Render Server[cite: 2]
+      'https://tomp.app/',                          // Public Backup 1
+      'https://bare.benrovers.noc.st/'             // Public Backup 2
+    ];
+
+    let currentBareIndex = 0;
+    let targetDestination = '';
+
     async function loadURL(e) {
       if (e) e.preventDefault();
       let val = input.value.trim();
       if (!val) return;
 
-      status.innerText = "Connecting...";
-
-      let targetUrl = val.startsWith('http://') || val.startsWith('https://') 
+      targetDestination = val.startsWith('http://') || val.startsWith('https://') 
         ? val 
         : (val.includes('.') && !val.includes(' ') ? 'https://' + val : 'https://www.google.com/search?q=' + encodeURIComponent(val));
 
+      currentBareIndex = 0;
+      tryConnect();
+    }
+
+    async function tryConnect() {
+      if (currentBareIndex >= bareServers.length) {
+        status.style.color = "#ff7b72";
+        status.innerText = "Error: All bare servers failed or timed out.";
+        return;
+      }
+
+      const activeBare = bareServers[currentBareIndex];
+      window.__uv$config.bare = activeBare;
+      
+      status.style.color = "#8b949e";
+      status.innerText = currentBareIndex === 0 
+        ? "Connecting (Render server waking up if sleeping...)" 
+        : `Trying fallback server #${currentBareIndex}...`;
+
       if ('serviceWorker' in navigator) {
         try {
-          await navigator.serviceWorker.register('./sw.js', { scope: __uv$config.prefix });
+          await navigator.serviceWorker.register('./sw.js', { scope: window.__uv$config.prefix });
         } catch (err) {
           console.warn("SW error:", err);
         }
       }
 
       try {
-        const encoded = Ultraviolet.codec.xor.encode(targetUrl);
-        frame.src = __uv$config.prefix + encoded;
-        frame.onload = () => { status.innerText = "Connected"; };
+        const encoded = Ultraviolet.codec.xor.encode(targetDestination);
+        frame.src = window.__uv$config.prefix + encoded;
+        
+        let loaded = false;
+        frame.onload = () => {
+          loaded = true;
+          status.style.color = "#3fb950";
+          status.innerText = currentBareIndex === 0 ? "Connected (Private Server)" : `Connected (Fallback #${currentBareIndex})`;
+        };
+
+        // Auto-switch to next fallback if server takes longer than 8 seconds to respond
+        setTimeout(() => {
+          if (!loaded && currentBareIndex < bareServers.length - 1) {
+            currentBareIndex++;
+            tryConnect();
+          }
+        }, 8000);
+
       } catch (err) {
-        status.innerText = "Error loading URL.";
+        currentBareIndex++;
+        tryConnect();
       }
     }
   </script>
