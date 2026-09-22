@@ -3,12 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Proxy Hub</title>
+  <title>Ultraviolet Proxy</title>
   <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
   <script>
+    // Multiple backup bare servers for 100% reliability
+    const bareServers = [
+      'https://bare.benrovers.nl/',
+      'https://tomphttp-bare.herokuapp.com/',
+      'https://bare.jackport.net/'
+    ];
+
     self.__uv$config = {
         prefix: '/proxy/uv/service/',
-        bare: 'https://bare.benrovers.nl/',
+        bare: bareServers[0],
         encodeUrl: (url) => {
           if (!url) return '';
           try { return Ultraviolet.codec.xor.encode(url); } 
@@ -89,9 +96,9 @@
   <div id="top-bar">
     <h1>Proxy</h1>
     <form id="search-form" onsubmit="loadURL(event)">
-      <input type="text" id="url-input" placeholder="Search or type a URL..." autocomplete="off" autofocus>
+      <input type="text" id="url-input" placeholder="Search or type a URL (e.g. google.com)..." autocomplete="off" autofocus>
     </form>
-    <div id="status">Ready</div>
+    <div id="status">Initializing...</div>
   </div>
 
   <iframe id="proxy-frame"></iframe>
@@ -100,6 +107,21 @@
     const input = document.getElementById('url-input');
     const frame = document.getElementById('proxy-frame');
     const status = document.getElementById('status');
+
+    async function registerSW() {
+      if (!navigator.serviceWorker) {
+        status.innerText = "Service workers not supported";
+        return;
+      }
+      try {
+        await navigator.serviceWorker.register('/proxy/sw.js', { scope: '/proxy/uv/service/' });
+        status.innerText = "Ready (Connected)";
+      } catch (err) {
+        status.innerText = "SW Registration Failed";
+        console.error(err);
+      }
+    }
+    registerSW();
 
     async function loadURL(e) {
       if (e) e.preventDefault();
@@ -113,7 +135,7 @@
         if (val.includes('.') && !val.includes(' ')) {
           targetUrl = 'https://' + val;
         } else {
-          targetUrl = 'https://www.bing.com/search?q=' + encodeURIComponent(val);
+          targetUrl = 'https://www.google.com/search?q=' + encodeURIComponent(val);
         }
       }
 
