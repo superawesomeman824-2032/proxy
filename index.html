@@ -77,7 +77,7 @@
   <iframe id="proxy-frame"></iframe>
 
   <script>
-    // 1. ANNIHILATE OLD ZOMBIE SERVICE WORKERS
+    // 1. CLEAR OLD SERVICE WORKERS ON LOAD
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(registrations) {
         for(let registration of registrations) {
@@ -90,11 +90,9 @@
     const frame = document.getElementById('proxy-frame');
     const status = document.getElementById('status');
 
-    // 2. 100 BACKUP GATEWAY / MIRROR ENDPOINTS
+    // 2. THE FULL GATEWAYS ARRAY (Known dead links removed)
     const gateways = [
-      'local', // Primary local service worker route
-      'https://uv.student-projects.workers.dev/service/',
-      'https://proxy.student-projects.workers.dev/service/',
+      'local', 
       'https://uv.to-be-continued.workers.dev/service/',
       'https://uv.holyunblocker.workers.dev/service/',
       'https://incognito.pro/service/',
@@ -217,7 +215,7 @@
 
       currentTargetUrl = targetUrl;
 
-      // Register local service worker first before trying routes
+      // Register local service worker first
       if ('serviceWorker' in navigator) {
         try {
           await navigator.serviceWorker.register('/sw.js', { scope: __uv$config.prefix });
@@ -229,7 +227,8 @@
       tryNextGateway();
     }
 
-    function tryNextGateway() {
+    // 3. UPGRADED FALLBACK SYSTEM (Pings servers before loading to skip dead links)
+    async function tryNextGateway() {
       if (currentGatewayIndex >= gateways.length) {
         status.innerText = "Critical Error: All gateways and mirrors failed.";
         return;
@@ -238,16 +237,23 @@
       const activeGateway = gateways[currentGatewayIndex];
       status.innerText = activeGateway === 'local' 
         ? "Connecting via local worker..." 
-        : `Trying backup mirror ${currentGatewayIndex}/100...`;
+        : `Trying backup mirror ${currentGatewayIndex}...`;
 
       try {
         const encoded = Ultraviolet.codec.xor.encode(currentTargetUrl);
+        let targetSrc = activeGateway === 'local' ? __uv$config.prefix + encoded : activeGateway + encoded;
 
-        if (activeGateway === 'local') {
-          frame.src = __uv$config.prefix + encoded;
-        } else {
-          frame.src = activeGateway + encoded;
+        if (activeGateway !== 'local') {
+           try {
+               await fetch(activeGateway, { mode: 'no-cors', cache: 'no-store' });
+           } catch (fetchErr) {
+               console.warn(`Gateway ${activeGateway} is dead. Skipping...`);
+               currentGatewayIndex++;
+               return tryNextGateway();
+           }
         }
+
+        frame.src = targetSrc;
 
         frame.onload = () => {
           status.innerText = activeGateway === 'local' ? "Connected (Local)" : `Connected (Backup ${currentGatewayIndex})`;
