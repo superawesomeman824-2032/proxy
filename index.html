@@ -4,12 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy Hub</title>
-  
-  <!-- Ultraviolet Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
-  <!-- uv.config.js is required for the local service worker -->
   <script src="/uv.config.js"></script>
-  
   <style>
     body {
       margin: 0;
@@ -40,7 +36,6 @@
     #search-form {
       flex-grow: 1;
       max-width: 600px;
-      display: flex;
     }
     input {
       width: 100%;
@@ -76,18 +71,28 @@
     <form id="search-form" onsubmit="loadURL(event)">
       <input type="text" id="url-input" placeholder="Type a website URL or search query..." autocomplete="off" autofocus>
     </form>
-    <div id="status">Ready</div>
+    <div id="status">Ready (100 Backups Loaded)</div>
   </div>
 
   <iframe id="proxy-frame"></iframe>
 
   <script>
+    // 1. ANNIHILATE OLD ZOMBIE SERVICE WORKERS
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+
     const input = document.getElementById('url-input');
     const frame = document.getElementById('proxy-frame');
     const status = document.getElementById('status');
 
-    // 100 BACKUP ENDPOINTS (Used if local Service Worker fails)
+    // 2. 100 BACKUP GATEWAY / MIRROR ENDPOINTS
     const gateways = [
+      'local', // Primary local service worker route
       'https://uv.student-projects.workers.dev/service/',
       'https://proxy.student-projects.workers.dev/service/',
       'https://uv.to-be-continued.workers.dev/service/',
@@ -198,59 +203,63 @@
       let val = input.value.trim();
       if (!val) return;
 
-      status.innerText = "Encoding URL...";
-      
-      // Format Search vs Direct URL
-      if (!val.includes('.') || val.includes(' ')) {
-        val = 'https://www.google.com/search?q=' + encodeURIComponent(val);
-      } else if (!val.startsWith('http')) {
-        val = 'https://' + val;
-      }
-      
-      currentTargetUrl = val;
+      status.innerText = "Processing URL...";
+      currentGatewayIndex = 0;
 
-      try {
-        // STEP 1: Try to register and use the local Service Worker first (Best Performance)
-        if (typeof __uv$config !== 'undefined' && 'serviceWorker' in navigator) {
-          await navigator.serviceWorker.register('/sw.js', { scope: __uv$config.prefix });
-          status.innerText = "Connected via Local Service Worker";
-          frame.src = __uv$config.prefix + __uv$config.encodeUrl(currentTargetUrl);
+      let targetUrl = val;
+      if (!val.startsWith('http://') && !val.startsWith('https://')) {
+        if (val.includes('.') && !val.includes(' ')) {
+          targetUrl = 'https://' + val;
         } else {
-          throw new Error("Local UV config not found.");
+          targetUrl = 'https://www.google.com/search?q=' + encodeURIComponent(val);
         }
-      } catch (err) {
-        // STEP 2: Fallback to the 100 Backup Gateways if local SW fails (GitHub Pages safety net)
-        console.warn("Local Service Worker failed, falling back to external gateways...", err);
-        currentGatewayIndex = 0;
-        tryNextGateway();
       }
+
+      currentTargetUrl = targetUrl;
+
+      // Register local service worker first before trying routes
+      if ('serviceWorker' in navigator) {
+        try {
+          await navigator.serviceWorker.register('/sw.js', { scope: __uv$config.prefix });
+        } catch (err) {
+          console.warn("Local SW registration warning:", err);
+        }
+      }
+
+      tryNextGateway();
     }
 
     function tryNextGateway() {
       if (currentGatewayIndex >= gateways.length) {
-        status.innerText = "Critical Error: All 100 gateways failed.";
+        status.innerText = "Critical Error: All gateways and mirrors failed.";
         return;
       }
 
-      status.innerText = `Local SW failed. Trying backup ${currentGatewayIndex + 1}/100...`;
+      const activeGateway = gateways[currentGatewayIndex];
+      status.innerText = activeGateway === 'local' 
+        ? "Connecting via local worker..." 
+        : `Trying backup mirror ${currentGatewayIndex}/100...`;
 
       try {
-        // Encode using Ultraviolet's raw XOR codec
         const encoded = Ultraviolet.codec.xor.encode(currentTargetUrl);
-        const activeGateway = gateways[currentGatewayIndex];
 
-        frame.src = activeGateway + encoded;
+        if (activeGateway === 'local') {
+          frame.src = __uv$config.prefix + encoded;
+        } else {
+          frame.src = activeGateway + encoded;
+        }
 
         frame.onload = () => {
-          status.innerText = `Connected via Backup Gateway ${currentGatewayIndex + 1}`;
+          status.innerText = activeGateway === 'local' ? "Connected (Local)" : `Connected (Backup ${currentGatewayIndex})`;
         };
-
+        
         frame.onerror = () => {
           currentGatewayIndex++;
           tryNextGateway();
         };
       } catch (err) {
-        status.innerText = "Encoding failed. Check URL formatting.";
+        currentGatewayIndex++;
+        tryNextGateway();
       }
     }
   </script>
