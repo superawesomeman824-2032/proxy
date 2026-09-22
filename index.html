@@ -8,60 +8,22 @@
   <script src="/uv.config.js"></script>
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      background: #0f1117;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: #f0f6fc;
-      overflow: hidden;
+      margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh;
+      background: #0f1117; font-family: sans-serif; color: #f0f6fc; overflow: hidden;
     }
     #top-bar {
-      background: #161b22;
-      padding: 12px 20px;
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      border-bottom: 1px solid #30363d;
-      flex-shrink: 0;
+      background: #161b22; padding: 12px 20px; display: flex; align-items: center; gap: 15px;
+      border-bottom: 1px solid #30363d; flex-shrink: 0;
     }
-    h1 {
-      margin: 0;
-      font-size: 18px;
-      color: #58a6ff;
-      font-weight: 600;
-    }
-    #search-form {
-      flex-grow: 1;
-      max-width: 600px;
-    }
+    h1 { margin: 0; font-size: 18px; color: #58a6ff; }
+    #search-form { flex-grow: 1; max-width: 600px; }
     input {
-      width: 100%;
-      padding: 8px 14px;
-      border-radius: 6px;
-      border: 1px solid #30363d;
-      background: #0d1117;
-      color: #f0f6fc;
-      font-size: 14px;
-      outline: none;
+      width: 100%; padding: 8px 14px; border-radius: 6px; border: 1px solid #30363d;
+      background: #0d1117; color: #f0f6fc; outline: none; font-size: 14px;
     }
-    input:focus {
-      border-color: #58a6ff;
-    }
-    #status {
-      font-size: 12px;
-      color: #8b949e;
-      margin-left: auto;
-    }
-    iframe {
-      flex-grow: 1;
-      border: none;
-      width: 100%;
-      height: 100%;
-      background: #ffffff;
-    }
+    input:focus { border-color: #58a6ff; }
+    #status { font-size: 12px; color: #8b949e; margin-left: auto; }
+    iframe { flex-grow: 1; border: none; width: 100%; height: 100%; background: #fff; }
   </style>
 </head>
 <body>
@@ -71,29 +33,26 @@
     <form id="search-form" onsubmit="loadURL(event)">
       <input type="text" id="url-input" placeholder="Type a website URL or search query..." autocomplete="off" autofocus>
     </form>
-    <div id="status">Ready</div>
+    <div id="status">Ready (Backups Enabled)</div>
   </div>
 
   <iframe id="proxy-frame"></iframe>
 
   <script>
+    // Clear old service workers on load
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(registrations => {
-        registrations.forEach(reg => reg.unregister());
-      });
+      navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
     }
 
     const input = document.getElementById('url-input');
     const frame = document.getElementById('proxy-frame');
     const status = document.getElementById('status');
 
-    // Cleaned Gateways Array (Zero student-projects references)
+    // RESTORED BACKUP GATEWAYS ARRAY
     const gateways = [
       'local', 
       'https://uv.to-be-continued.workers.dev/service/',
       'https://uv.holyunblocker.workers.dev/service/',
-      'https://incognito.pro/service/',
-      'https://zengarden.org/service/',
       'https://mathclass.site/service/',
       'https://sciencehomework.net/service/',
       'https://englishclass.me/service/',
@@ -201,10 +160,9 @@
       status.innerText = "Processing URL...";
       currentGatewayIndex = 0;
 
-      let targetUrl = val;
-      if (!val.startsWith('http://') && !val.startsWith('https://')) {
-        targetUrl = val.includes('.') && !val.includes(' ') ? 'https://' + val : 'https://www.google.com/search?q=' + encodeURIComponent(val);
-      }
+      let targetUrl = val.startsWith('http://') || val.startsWith('https://') 
+        ? val 
+        : (val.includes('.') && !val.includes(' ') ? 'https://' + val : 'https://www.google.com/search?q=' + encodeURIComponent(val));
 
       currentTargetUrl = targetUrl;
 
@@ -221,12 +179,12 @@
 
     async function tryNextGateway() {
       if (currentGatewayIndex >= gateways.length) {
-        status.innerText = "Critical Error: All gateways failed.";
+        status.innerText = "Error: All local and backup gateways failed.";
         return;
       }
 
       const activeGateway = gateways[currentGatewayIndex];
-      status.innerText = activeGateway === 'local' ? "Connecting local..." : `Trying mirror ${currentGatewayIndex}...`;
+      status.innerText = activeGateway === 'local' ? "Connecting local..." : `Trying backup mirror ${currentGatewayIndex}...`;
 
       try {
         const encoded = Ultraviolet.codec.xor.encode(currentTargetUrl);
@@ -242,8 +200,13 @@
         }
 
         frame.src = targetSrc;
-        frame.onload = () => { status.innerText = "Connected"; };
-        frame.onerror = () => { currentGatewayIndex++; tryNextGateway(); };
+        frame.onload = () => { 
+          status.innerText = activeGateway === 'local' ? "Connected (Local)" : `Connected (Backup ${currentGatewayIndex})`; 
+        };
+        frame.onerror = () => { 
+          currentGatewayIndex++; 
+          tryNextGateway(); 
+        };
       } catch (err) {
         currentGatewayIndex++;
         tryNextGateway();
