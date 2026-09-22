@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy Hub</title>
+  <!-- Ultraviolet Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
-  <script src="/uv.config.js"></script>
+  <!-- Relative path configuration to fix GitHub Pages routing -->
+  <script src="./uv.config.js"></script>
   <style>
     body {
       margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh;
@@ -22,23 +24,24 @@
       background: #0d1117; color: #f0f6fc; outline: none; font-size: 14px;
     }
     input:focus { border-color: #58a6ff; }
-    #status { font-size: 12px; color: #ff7b72; margin-left: auto; max-width: 400px; text-align: right; }
+    #status { font-size: 12px; color: #8b949e; margin-left: auto; max-width: 350px; text-align: right; }
     iframe { flex-grow: 1; border: none; width: 100%; height: 100%; background: #fff; }
   </style>
 </head>
 <body>
 
   <div id="top-bar">
-    <h1>Proxy</h1>
+    <h1>Proxy Hub</h1>
     <form id="search-form" onsubmit="loadURL(event)">
       <input type="text" id="url-input" placeholder="Type a website URL or search query..." autocomplete="off" autofocus>
     </form>
-    <div id="status">Ready</div>
+    <div id="status">Ready (Multi-Fallback Enabled)</div>
   </div>
 
   <iframe id="proxy-frame"></iframe>
 
   <script>
+    // Clean up old service workers
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
     }
@@ -47,37 +50,65 @@
     const frame = document.getElementById('proxy-frame');
     const status = document.getElementById('status');
 
+    // MULTIPLE BARE SERVER FALLBACK LIST
+    // Your private Render server is first, followed by safe fallbacks
+    const bareFallbacks = [
+      'https://bare-server-y5ch.onrender.com/bare/', // Your private server[cite: 2]
+      'https://tomp.app/',                          // Public backup 1
+      'https://bare.benrovers.noc.st/'             // Public backup 2
+    ];
+
+    let activeBareIndex = 0;
+    let pendingUrl = '';
+
     async function loadURL(e) {
       if (e) e.preventDefault();
       let val = input.value.trim();
       if (!val) return;
 
-      status.style.color = "#8b949e";
-      status.innerText = "Connecting...";
-
-      let targetUrl = val.startsWith('http://') || val.startsWith('https://') 
+      // Format target URL properly
+      pendingUrl = val.startsWith('http://') || val.startsWith('https://') 
         ? val 
         : (val.includes('.') && !val.includes(' ') ? 'https://' + val : 'https://www.google.com/search?q=' + encodeURIComponent(val));
 
+      activeBareIndex = 0; // Reset to primary server
+      attemptConnection();
+    }
+
+    async function attemptConnection() {
+      if (activeBareIndex >= bareFallbacks.length) {
+        status.style.color = "#ff7b72";
+        status.innerText = "Error: All primary and backup bare servers failed.";
+        return;
+      }
+
+      const currentBare = bareFallbacks[activeBareIndex];
+      status.style.color = "#8b949e";
+      status.innerText = activeBareIndex === 0 ? "Connecting to private server..." : `Fallback active (${activeBareIndex}/${bareFallbacks.length - 1})...`;
+
+      // Dynamically update the config's bare endpoint
+      __uv$config.bare = currentBare;
+
       if ('serviceWorker' in navigator) {
         try {
-          await navigator.serviceWorker.register('/sw.js', { scope: __uv$config.prefix });
+          await navigator.serviceWorker.register('./sw.js', { scope: __uv$config.prefix });
         } catch (err) {
-          console.warn("SW registration error:", err);
+          console.warn("SW warning:", err);
         }
       }
 
       try {
-        const encoded = Ultraviolet.codec.xor.encode(targetUrl);
+        const encoded = Ultraviolet.codec.xor.encode(pendingUrl);
         frame.src = __uv$config.prefix + encoded;
-        frame.onload = () => { 
+        
+        frame.onload = () => {
           status.style.color = "#3fb950";
-          status.innerText = "Connected"; 
+          status.innerText = activeBareIndex === 0 ? "Connected (Private Server)" : `Connected (Fallback #${activeBareIndex})`;
         };
       } catch (err) {
-        console.error(err);
-        status.style.color = "#ff7b72";
-        status.innerText = "Error: " + (err.message || err);
+        console.warn(`Bare server ${currentBare} failed, trying next...`);
+        activeBareIndex++;
+        attemptConnection();
       }
     }
   </script>
