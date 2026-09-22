@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proxy Hub</title>
-  <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
   <style>
     body {
       margin: 0;
@@ -80,12 +79,6 @@
     const frame = document.getElementById('proxy-frame');
     const status = document.getElementById('status');
 
-    // List of reliable backup bare/gateway servers
-    const proxyGateways = [
-      'https://tomphttp-bare.herokuapp.com/v1/',
-      'https://bare.jackport.net/v1/'
-    ];
-
     function loadURL(e) {
       if (e) e.preventDefault();
       let val = input.value.trim();
@@ -102,14 +95,10 @@
         }
       }
 
-      try {
-        const encoded = Ultraviolet.codec.xor.encode(targetUrl);
-        // Uses a live backup endpoint
-        frame.src = proxyGateways[0] + encoded;
-        frame.onload = () => { status.innerText = "Connected"; };
-      } catch (err) {
-        status.innerText = "Error loading URL";
-      }
+      // Direct service gateway routing to bypass dead bare servers
+      frame.src = 'https://uv.student-projects.workers.dev/service/' + btoa(targetUrl);
+      frame.onload = () => { status.innerText = "Connected"; };
+      frame.onerror = () => { status.innerText = "Failed to load"; };
     }
   </script>
 
