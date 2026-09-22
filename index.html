@@ -71,18 +71,15 @@
     <form id="search-form" onsubmit="loadURL(event)">
       <input type="text" id="url-input" placeholder="Type a website URL or search query..." autocomplete="off" autofocus>
     </form>
-    <div id="status">Ready (100 Backups Loaded)</div>
+    <div id="status">Ready</div>
   </div>
 
   <iframe id="proxy-frame"></iframe>
 
   <script>
-    // 1. CLEAR OLD SERVICE WORKERS ON LOAD
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for(let registration of registrations) {
-          registration.unregister();
-        }
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(reg => reg.unregister());
       });
     }
 
@@ -90,7 +87,7 @@
     const frame = document.getElementById('proxy-frame');
     const status = document.getElementById('status');
 
-    // 2. THE FULL GATEWAYS ARRAY (Known dead links removed)
+    // Cleaned Gateways Array (Zero student-projects references)
     const gateways = [
       'local', 
       'https://uv.to-be-continued.workers.dev/service/',
@@ -206,38 +203,30 @@
 
       let targetUrl = val;
       if (!val.startsWith('http://') && !val.startsWith('https://')) {
-        if (val.includes('.') && !val.includes(' ')) {
-          targetUrl = 'https://' + val;
-        } else {
-          targetUrl = 'https://www.google.com/search?q=' + encodeURIComponent(val);
-        }
+        targetUrl = val.includes('.') && !val.includes(' ') ? 'https://' + val : 'https://www.google.com/search?q=' + encodeURIComponent(val);
       }
 
       currentTargetUrl = targetUrl;
 
-      // Register local service worker first
       if ('serviceWorker' in navigator) {
         try {
           await navigator.serviceWorker.register('/sw.js', { scope: __uv$config.prefix });
         } catch (err) {
-          console.warn("Local SW registration warning:", err);
+          console.warn("SW warning:", err);
         }
       }
 
       tryNextGateway();
     }
 
-    // 3. UPGRADED FALLBACK SYSTEM (Pings servers before loading to skip dead links)
     async function tryNextGateway() {
       if (currentGatewayIndex >= gateways.length) {
-        status.innerText = "Critical Error: All gateways and mirrors failed.";
+        status.innerText = "Critical Error: All gateways failed.";
         return;
       }
 
       const activeGateway = gateways[currentGatewayIndex];
-      status.innerText = activeGateway === 'local' 
-        ? "Connecting via local worker..." 
-        : `Trying backup mirror ${currentGatewayIndex}...`;
+      status.innerText = activeGateway === 'local' ? "Connecting local..." : `Trying mirror ${currentGatewayIndex}...`;
 
       try {
         const encoded = Ultraviolet.codec.xor.encode(currentTargetUrl);
@@ -247,28 +236,19 @@
            try {
                await fetch(activeGateway, { mode: 'no-cors', cache: 'no-store' });
            } catch (fetchErr) {
-               console.warn(`Gateway ${activeGateway} is dead. Skipping...`);
                currentGatewayIndex++;
                return tryNextGateway();
            }
         }
 
         frame.src = targetSrc;
-
-        frame.onload = () => {
-          status.innerText = activeGateway === 'local' ? "Connected (Local)" : `Connected (Backup ${currentGatewayIndex})`;
-        };
-        
-        frame.onerror = () => {
-          currentGatewayIndex++;
-          tryNextGateway();
-        };
+        frame.onload = () => { status.innerText = "Connected"; };
+        frame.onerror = () => { currentGatewayIndex++; tryNextGateway(); };
       } catch (err) {
         currentGatewayIndex++;
         tryNextGateway();
       }
     }
   </script>
-
 </body>
 </html>
