@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Browser Hub - S+++ Edition</title>
+  <title>Browser Hub</title>
   <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
   <script>
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
@@ -34,11 +34,10 @@
     #browser-bar {
       background: #161b22; padding: 10px 15px; display: flex; align-items: center; gap: 10px;
       border-bottom: 1px solid #30363d; flex-shrink: 0; height: 50px; width: 100%;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 10;
     }
     .browser-btn {
       background: #21262d; border: 1px solid #30363d; color: #f0f6fc;
-      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s;
+      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 14px;
     }
     .browser-btn:hover { background: #30363d; }
     #search-form { flex-grow: 1; display: flex; }
@@ -46,8 +45,8 @@
       width: 100%; padding: 8px 14px; border-radius: 6px; border: 1px solid #30363d;
       background: #0d1117; color: #f0f6fc; outline: none; font-size: 14px;
     }
-    input:focus { border-color: #58a6ff; box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15); }
-    #status { font-size: 11px; color: #8b949e; white-space: nowrap; min-width: 130px; text-align: right; font-weight: 500; }
+    input:focus { border-color: #58a6ff; }
+    #status { font-size: 11px; color: #8b949e; white-space: nowrap; min-width: 140px; text-align: right; }
     #proxy-frame {
       flex-grow: 1; border: none; width: 100%; height: calc(100vh - 50px); background: #ffffff;
     }
@@ -62,19 +61,24 @@
     <form id="search-form" onsubmit="loadURL(event)">
       <input type="text" id="url-input" placeholder="Search or enter website URL..." autocomplete="off" autofocus>
     </form>
-    <div id="status">Initializing Hub...</div>
+    <div id="status">System Ready</div>
   </div>
 
   <iframe id="proxy-frame"></iframe>
 
   <script>
-    // S+++ Redundancy Tier: Primary Private Server + Multi-Region Fallback Network
+    // IFRAME GUARD: Instantly hides the browser bar if it ever tries to nest inside itself
+    if (window.self !== window.top) {
+      const bar = document.getElementById('browser-bar');
+      if (bar) bar.style.display = 'none';
+      const f = document.getElementById('proxy-frame');
+      if (f) f.style.height = '100vh';
+    }
+
     const bareServers = [
-      'https://bare-server-y5ch.onrender.com/bare/', // Primary Render Server
-      'https://tomp.app/bare/',                     // Fallback 1
-      'https://bare.benrovers.noc.st/bare/',       // Fallback 2
-      'https://solar-1.benrovers.noc.st/bare/',     // Fallback 3
-      'https://b.tomp.app/'                         // Fallback 4
+      'https://bare-server-y5ch.onrender.com/bare/',
+      'https://tomp.app/bare/',
+      'https://bare.benrovers.noc.st/bare/'
     ];
 
     let activeBareIndex = 0;
@@ -88,11 +92,15 @@
       try {
         await navigator.serviceWorker.register(window.__uv$config.sw, { scope: window.__uv$config.prefix });
         await navigator.serviceWorker.ready;
-        statusEl.innerText = "System Ready";
-        statusEl.style.color = "#3fb950";
+        if (window.self === window.top) {
+          statusEl.innerText = "System Ready";
+          statusEl.style.color = "#3fb950";
+        }
       } catch (err) {
-        statusEl.innerText = "System Ready";
-        statusEl.style.color = "#3fb950";
+        if (window.self === window.top) {
+          statusEl.innerText = "System Ready";
+          statusEl.style.color = "#3fb950";
+        }
       }
     }
     initServiceWorker();
@@ -116,7 +124,7 @@
 
     async function attemptConnection() {
       if (activeBareIndex >= bareServers.length) {
-        statusEl.innerText = "All Redundancies Failed";
+        statusEl.innerText = "All Servers Failed";
         statusEl.style.color = "#ff7b72";
         return;
       }
@@ -124,10 +132,9 @@
       const currentBare = bareServers[activeBareIndex];
       window.__uv$config.bare = currentBare;
 
-      statusEl.innerText = activeBareIndex === 0 ? "Waking Private Server..." : `Switching to Fallback #${activeBareIndex}`;
+      statusEl.innerText = activeBareIndex === 0 ? "Waking Render (30s)..." : `Fallback #${activeBareIndex}`;
       statusEl.style.color = "#58a6ff";
 
-      // If hitting the Render server, ping it to wake it up from sleep
       if (activeBareIndex === 0) {
         try {
           await fetch(currentBare, { method: 'GET', mode: 'no-cors' }).catch(() => {});
@@ -137,8 +144,7 @@
       try {
         const encoded = Ultraviolet.codec.xor.encode(pendingUrl);
         frame.src = window.__uv$config.prefix + encoded;
-        
-        statusEl.innerText = activeBareIndex === 0 ? "Connected (Private)" : `Connected (Fallback #${activeBareIndex})`;
+        statusEl.innerText = activeBareIndex === 0 ? "Connected (Private)" : `Connected (Fallback)`;
         statusEl.style.color = "#3fb950";
       } catch (err) {
         activeBareIndex++;
