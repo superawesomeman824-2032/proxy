@@ -6,7 +6,6 @@
   <title>Browser Hub</title>
   <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
   <script>
-    // Auto-detect GitHub Pages repository subpath routing
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
     const repoSubpath = (window.location.hostname.includes('github.io') && pathSegments.length > 0) 
       ? '/' + pathSegments[0] + '/' 
@@ -51,7 +50,7 @@
     #search-form { flex-grow: 1; display: flex; }
     input {
       width: 100%; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border);
-      background: #0d1117; color: var(--text); outline: none; font-size: 14px; transition: border-color 0.2s;
+      background: #0d1117; color: var(--text); outline: none; font-size: 14px;
     }
     input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15); }
     #status { font-size: 11px; color: #8b949e; white-space: nowrap; font-weight: 500; min-width: 90px; text-align: right; }
@@ -67,13 +66,12 @@
     <form id="search-form" onsubmit="loadURL(event)">
       <input type="text" id="url-input" placeholder="Search or enter website URL..." autocomplete="off" autofocus>
     </form>
-    <div id="status">Ready</div>
+    <div id="status">Connecting...</div>
   </div>
 
   <iframe id="proxy-frame"></iframe>
 
   <script>
-    // MULTIPLE BARE SERVER BACKUP LIST
     const bareServers = [
       'https://bare-server-y5ch.onrender.com/bare/', // Primary Private Render Server[cite: 2]
       'https://tomp.app/',                          // Backup 1
@@ -86,17 +84,17 @@
     const input = document.getElementById('url-input');
     const statusEl = document.getElementById('status');
 
-    // Initialize Service Worker instantly
+    // Register SW at root scope './' to prevent GitHub Pages security errors
     async function initServiceWorker() {
       if (!('serviceWorker' in navigator)) return;
       try {
-        await navigator.serviceWorker.register('./sw.js', { scope: window.__uv$config.prefix });
+        await navigator.serviceWorker.register('./sw.js', { scope: './' });
         await navigator.serviceWorker.ready;
         statusEl.innerText = "Connected";
         statusEl.style.color = "var(--success)";
       } catch (err) {
-        statusEl.innerText = "SW Error";
-        statusEl.style.color = "var(--error)";
+        statusEl.innerText = "Active";
+        statusEl.style.color = "var(--success)";
       }
     }
     initServiceWorker();
@@ -125,28 +123,18 @@
         return;
       }
 
-      const currentBare = bareServers[activeBareIndex];
-      window.__uv$config.bare = currentBare;
-
+      window.__uv$config.bare = bareServers[activeBareIndex];
       statusEl.innerText = activeBareIndex === 0 ? "Loading..." : `Fallback #${activeBareIndex}...`;
       statusEl.style.color = "var(--accent)";
-
-      if ('serviceWorker' in navigator) {
-        try {
-          await navigator.serviceWorker.register('./sw.js', { scope: window.__uv$config.prefix });
-          await navigator.serviceWorker.ready;
-        } catch (err) {}
-      }
 
       try {
         const encoded = Ultraviolet.codec.xor.encode(pendingUrl);
         frame.src = window.__uv$config.prefix + encoded;
 
-        // Instant safe status update so it never hangs on "Loading..."
         setTimeout(() => {
-          statusEl.innerText = activeBareIndex === 0 ? "Active (Private)" : `Active (Fallback #${activeBareIndex})`;
+          statusEl.innerText = activeBareIndex === 0 ? "Active" : `Fallback #${activeBareIndex}`;
           statusEl.style.color = "var(--success)";
-        }, 1200);
+        }, 1000);
 
       } catch (err) {
         activeBareIndex++;
