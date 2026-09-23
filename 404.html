@@ -3,534 +3,392 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Browser Hub - Permanent Dark Edition</title>
-  
-  <!-- Ultraviolet Core Bundle -->
-  <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
-
-  <script>
-    // GitHub Pages / Subpath Auto-Resolver
-    const pathSegments = window.location.pathname.split('/').filter(Boolean);
-    const repoSubpath = (window.location.hostname.includes('github.io') && pathSegments.length > 0) 
-      ? '/' + pathSegments[0] + '/' 
-      : '/';
-
-    // Global Ultraviolet Configuration
-    window.__uv$config = {
-      prefix: repoSubpath + 'uv/service/',
-      bare: 'https://bare-server-y5ch.onrender.com/bare/',
-      encodeUrl: Ultraviolet.codec.xor.encode,
-      decodeUrl: Ultraviolet.codec.xor.decode,
-      handler: 'https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.handler.js',
-      client: 'https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.client.js',
-      bundle: 'https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js',
-      config: repoSubpath + 'uv.config.js',
-      sw: repoSubpath + 'sw.js',
-    };
-  </script>
-
+  <title>Browser Hub</title>
   <style>
     :root {
-      --bg-darkest: #07090e;
-      --bg-header: #0f1319;
-      --bg-bar: #161b22;
-      --bg-input: #0d1117;
-      --bg-hover: #21262d;
-      --accent: #388bfd;
-      --accent-glow: rgba(56, 139, 253, 0.25);
-      --border: #30363d;
-      --text-main: #f0f6fc;
-      --text-muted: #8b949e;
-      --green: #3fb950;
-      --yellow: #d29922;
-      --red: #f85149;
+      --bg-dark: #121316;
+      --toolbar-bg: #1e1f24;
+      --tab-bg: #18191d;
+      --tab-active: #2a2b32;
+      --text-main: #e1e2e6;
+      --text-muted: #8b8e98;
+      --accent-color: #3b82f6;
+      --border-color: #2e3038;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body {
-      width: 100vw;
-      height: 100vh;
-      background: var(--bg-darkest) !important;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-dark);
       color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
+    }
+
+    /* Window Header & Tabs */
+    .chrome-header {
+      background-color: var(--tab-bg);
       display: flex;
       flex-direction: column;
+      border-bottom: 1px solid var(--border-color);
     }
 
-    /* ANTI-NESTING RULE FOR GOOGLE SITES & SAME-ORIGIN LOOPS */
-    body.is-nested-frame #browser-app-header {
-      display: none !important;
-    }
-    body.is-nested-frame #viewport-container {
-      height: 100vh !important;
-    }
-
-    /* --- TOP HEADER & TABS --- */
-    #browser-app-header {
-      background: var(--bg-header);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-      user-select: none;
-      z-index: 100;
-    }
-
-    #tab-strip {
+    .tab-bar {
       display: flex;
       align-items: center;
-      background: var(--bg-darkest);
-      padding: 6px 10px 0 10px;
-      gap: 6px;
+      padding: 6px 6px 0 6px;
+      gap: 4px;
       overflow-x: auto;
     }
 
-    .browser-tab {
+    .tab {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: var(--bg-header);
-      border: 1px solid var(--border);
-      border-bottom: none;
-      padding: 7px 14px;
+      background-color: transparent;
+      padding: 8px 14px;
       border-radius: 8px 8px 0 0;
-      font-size: 12px;
-      font-weight: 500;
+      font-size: 13px;
       color: var(--text-muted);
       cursor: pointer;
       max-width: 200px;
       min-width: 120px;
-      transition: all 0.15s ease;
+      user-select: none;
+      border: 1px solid transparent;
+      border-bottom: none;
     }
 
-    .browser-tab.active-tab {
-      background: var(--bg-bar);
+    .tab.active {
+      background-color: var(--toolbar-bg);
       color: var(--text-main);
-      border-color: var(--border);
-      border-bottom: 2px solid var(--accent);
-      font-weight: 600;
+      border-color: var(--border-color);
     }
 
-    .tab-title-text {
+    .tab-title {
+      flex: 1;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      flex-grow: 1;
     }
 
-    .tab-close-btn {
-      width: 16px;
-      height: 16px;
+    .tab-close {
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      cursor: pointer;
       border-radius: 50%;
+      width: 18px;
+      height: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
-      color: var(--text-muted);
     }
 
-    .tab-close-btn:hover {
-      background: rgba(248, 81, 73, 0.2);
-      color: var(--red);
+    .tab-close:hover {
+      background-color: rgba(255,255,255,0.1);
+      color: var(--text-main);
     }
 
-    #add-tab-btn {
-      background: transparent;
+    .new-tab-btn {
+      background: none;
       border: none;
-      color: var(--text-muted);
+      color: var(--text-main);
       font-size: 18px;
       padding: 4px 10px;
       cursor: pointer;
-      border-radius: 6px;
+      border-radius: 4px;
     }
 
-    #add-tab-btn:hover { background: var(--bg-hover); color: var(--text-main); }
+    .new-tab-btn:hover { background-color: var(--toolbar-bg); }
 
-    /* --- NAVIGATION BAR --- */
-    #nav-controls-bar {
-      background: var(--bg-bar);
-      padding: 8px 14px;
+    /* Navigation Toolbar */
+    .toolbar {
+      background-color: var(--toolbar-bg);
       display: flex;
       align-items: center;
+      padding: 8px 12px;
       gap: 10px;
     }
 
     .nav-btn {
-      background: var(--bg-input);
-      border: 1px solid var(--border);
+      background: none;
+      border: none;
       color: var(--text-main);
-      width: 32px;
-      height: 32px;
-      border-radius: 6px;
+      font-size: 16px;
       cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .nav-btn:hover { background-color: rgba(255,255,255,0.08); }
+
+    .address-bar {
+      flex: 1;
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 14px;
-    }
-
-    .nav-btn:hover { background: var(--bg-hover); }
-
-    #omnibox-form { flex-grow: 1; display: flex; }
-
-    #omnibox-input {
-      width: 100%;
-      height: 34px;
-      padding: 0 14px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: var(--bg-input);
-      color: var(--text-main);
-      outline: none;
-      font-size: 13.5px;
-    }
-
-    #omnibox-input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
-    }
-
-    #status-pill {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 12px;
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      white-space: nowrap;
-    }
-
-    /* --- BOOKMARKS BAR --- */
-    #quick-bookmarks {
-      background: var(--bg-bar);
-      padding: 2px 14px 8px 14px;
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .bookmark-btn {
-      background: var(--bg-input);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
+      background-color: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
       padding: 4px 12px;
-      border-radius: 14px;
-      font-size: 11.5px;
-      cursor: pointer;
+    }
+
+    .address-bar input {
+      width: 100%;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-size: 13px;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background-color: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
       white-space: nowrap;
     }
 
-    .bookmark-btn:hover {
-      color: var(--text-main);
-      border-color: var(--accent);
-      background: var(--bg-hover);
-    }
-
-    /* --- VIEWPORT CONTAINER --- */
-    #viewport-container {
-      flex: 1;
-      width: 100%;
-      height: 100%;
-      position: relative;
-      background: var(--bg-darkest) !important;
+    /* Bookmarks Bar */
+    .bookmarks-bar {
+      background-color: var(--toolbar-bg);
       display: flex;
-      min-height: 0;
+      gap: 12px;
+      padding: 4px 16px 8px 16px;
+      border-bottom: 1px solid var(--border-color);
     }
 
-    .browser-frame {
+    .bookmark-item {
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .bookmark-item:hover { color: var(--text-main); }
+
+    /* Content Area */
+    .viewport-container {
+      flex: 1;
+      position: relative;
+      background-color: var(--bg-dark);
+    }
+
+    .tab-viewport {
       width: 100%;
       height: 100%;
       border: none;
       display: none;
-      background: var(--bg-darkest) !important;
-      flex: 1;
     }
 
-    .browser-frame.active-frame {
-      display: block;
+    .tab-viewport.active { display: block; }
+
+    /* Home Screen overlay for new tab */
+    .home-screen {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bg-dark);
+      z-index: 10;
     }
+
+    .home-screen h1 { font-size: 32px; margin-bottom: 12px; color: #60a5fa; }
+    .home-screen p { color: var(--text-muted); font-size: 14px; }
   </style>
 </head>
 <body>
 
-  <div id="browser-app-header">
-    <div id="tab-strip">
-      <div id="tabs-container" style="display:flex; gap:6px;"></div>
-      <button id="add-tab-btn" onclick="openNewTab()" title="New Tab">+</button>
+  <div class="chrome-header">
+    <div class="tab-bar" id="tabBar">
+      <button class="new-tab-btn" onclick="createNewTab()">+</button>
     </div>
-
-    <div id="nav-controls-bar">
-      <button class="nav-btn" onclick="goBackTab()" title="Back">&#8592;</button>
-      <button class="nav-btn" onclick="goForwardTab()" title="Forward">&#8594;</button>
-      <button class="nav-btn" onclick="reloadTab()" title="Reload">&#8635;</button>
-      
-      <form id="omnibox-form" onsubmit="submitSearch(event)">
-        <input type="text" id="omnibox-input" placeholder="Search Google or type a web address..." autocomplete="off">
-      </form>
-
-      <div id="status-pill">System Ready</div>
+    <div class="toolbar">
+      <button class="nav-btn" onclick="getActiveTab()?.goBack()">&#129144;</button>
+      <button class="nav-btn" onclick="getActiveTab()?.goForward()">&#129146;</button>
+      <button class="nav-btn" onclick="getActiveTab()?.reload()">&#8635;</button>
+      <div class="address-bar">
+        <input type="text" id="urlInput" placeholder="Search Google or type a URL..." onkeydown="handleUrlSubmit(event)">
+      </div>
+      <div class="status-badge" id="proxyStatus">Proxy Active</div>
     </div>
-
-    <div id="quick-bookmarks">
-      <div class="bookmark-btn" onclick="quickLaunch('https://google.com')">🔍 Google</div>
-      <div class="bookmark-btn" onclick="quickLaunch('https://youtube.com')">▶️ YouTube</div>
-      <div class="bookmark-btn" onclick="quickLaunch('https://discord.com')">💬 Discord</div>
-      <div class="bookmark-btn" onclick="quickLaunch('https://reddit.com')">🤖 Reddit</div>
-      <div class="bookmark-btn" onclick="quickLaunch('https://wikipedia.org')">📚 Wikipedia</div>
-      <div class="bookmark-btn" onclick="quickLaunch('https://github.com')">🐙 GitHub</div>
+    <div class="bookmarks-bar">
+      <span class="bookmark-item" onclick="navigateActiveTab('https://google.com')">🔍 Google</span>
+      <span class="bookmark-item" onclick="navigateActiveTab('https://youtube.com')">▶️ YouTube</span>
+      <span class="bookmark-item" onclick="navigateActiveTab('https://discord.com')">💬 Discord</span>
+      <span class="bookmark-item" onclick="navigateActiveTab('https://reddit.com')">🤖 Reddit</span>
+      <span class="bookmark-item" onclick="navigateActiveTab('https://wikipedia.org')">🌐 Wikipedia</span>
     </div>
   </div>
 
-  <div id="viewport-container"></div>
+  <div class="viewport-container" id="viewportContainer">
+    <div class="home-screen" id="homeScreen">
+      <h1>Browser Hub</h1>
+      <p>Type a URL or search query above to begin browsing.</p>
+    </div>
+  </div>
 
   <script>
-    // 1. SMART CROSS-ORIGIN ANTI-NESTING LOCK
-    try {
-      if (window.self !== window.top) {
-        if (window.parent.location.hostname === window.location.hostname) {
-          document.body.classList.add('is-nested-frame');
+    // Configuration: Point to your deployed proxy endpoint / ServiceWorker route
+    const PROXY_PREFIX = "/service/"; 
+    let tabs = [];
+    let activeTabId = null;
+
+    class Tab {
+      constructor(id, title = "New Tab", url = "") {
+        this.id = id;
+        this.title = title;
+        this.url = url;
+        
+        // Element creation
+        this.tabEl = document.createElement("div");
+        this.tabEl.className = "tab";
+        this.tabEl.onclick = () => switchTab(this.id);
+        this.tabEl.innerHTML = `
+          <span class="tab-title">${title}</span>
+          <button class="tab-close" onclick="closeTab('${this.id}', event)">&times;</button>
+        `;
+
+        this.iframeEl = document.createElement("iframe");
+        this.iframeEl.className = "tab-viewport";
+        
+        if (url) {
+          this.loadUrl(url);
         }
       }
-    } catch (e) {}
 
-    // 2. HYDRA NETWORK (Failover Bare Servers)
-    const bareFailoverPool = [
-      'https://bare-server-y5ch.onrender.com/bare/',
-      'https://tomp.app/bare/',
-      'https://bare.benrovers.noc.st/bare/',
-      'https://b.tomp.app/bare/',
-      'https://solar-1.benrovers.noc.st/bare/',
-      'https://c.tomp.app/bare/',
-      'https://lunar-1.benrovers.noc.st/bare/',
-      'https://bare.starlightproxy.com/bare/',
-      'https://flowos-bare.onrender.com/bare/',
-      'https://bare.mathstudy.app/bare/',
-      'https://bare.z1g.top/bare/',
-      'https://d.tomp.app/bare/'
-    ];
+      loadUrl(rawInput) {
+        let finalUrl = rawInput.trim();
+        if (!finalUrl) return;
 
-    let activeBareIndex = 0;
-    let tabsList = [];
-    let currentTabId = null;
-
-    const statusPill = document.getElementById('status-pill');
-    const omniboxInput = document.getElementById('omnibox-input');
-    const tabsContainer = document.getElementById('tabs-container');
-    const viewportContainer = document.getElementById('viewport-container');
-
-    // Default Dark New Tab Page Content
-    const darkStartPageHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body {
-            background: #07090e;
-            color: #f0f6fc;
-            font-family: -apple-system, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
+        // Auto-format domain vs search query
+        if (!/^https?:\/\//i.test(finalUrl)) {
+          if (finalUrl.includes(".") && !finalUrl.includes(" ")) {
+            finalUrl = "https://" + finalUrl;
+          } else {
+            finalUrl = `https://www.google.com/search?q=${encodeURIComponent(finalUrl)}`;
           }
-          h1 { font-size: 28px; margin-bottom: 8px; color: #388bfd; }
-          p { color: #8b949e; font-size: 14px; }
-        </style>
-      </head>
-      <body>
-        <h1>Browser Hub</h1>
-        <p>Type a URL or search query above to begin browsing.</p>
-      </body>
-      </html>
-    `;
-
-    // Register UV Service Worker
-    async function initServiceWorker() {
-      if ('serviceWorker' in navigator) {
-        try {
-          await navigator.serviceWorker.register(window.__uv$config.sw, { scope: window.__uv$config.prefix });
-          await navigator.serviceWorker.ready;
-          setStatus("Protected (Private)", "var(--green)");
-        } catch (err) {
-          setStatus("Service Worker Initializing...", "var(--yellow)");
         }
-      }
-    }
-    initServiceWorker();
 
-    function setStatus(msg, color) {
-      statusPill.innerText = msg;
-      statusPill.style.color = color;
-    }
+        this.url = finalUrl;
+        this.title = new URL(finalUrl).hostname.replace("www.", "");
+        this.tabEl.querySelector(".tab-title").innerText = this.title;
 
-    // 3. TAB MANAGEMENT
-    function openNewTab(url = '') {
-      const id = 'tab-' + Math.random().toString(36).substr(2, 9);
-
-      const frame = document.createElement('iframe');
-      frame.className = 'browser-frame';
-      frame.id = 'frame-' + id;
-      viewportContainer.appendChild(frame);
-
-      const tabObject = { id: id, title: 'New Tab', url: url, frame: frame };
-      tabsList.push(tabObject);
-
-      if (!url) {
-        frame.srcdoc = darkStartPageHtml;
+        // Route URL through the service worker proxy path
+        this.iframeEl.src = PROXY_PREFIX + encodeURIComponent(finalUrl);
       }
 
-      setActiveTab(id);
-
-      if (url) {
-        processNavigation(tabObject, url);
-      }
+      reload() { if (this.iframeEl.src) this.iframeEl.src = this.iframeEl.src; }
+      goBack() { try { this.iframeEl.contentWindow.history.back(); } catch(e){} }
+      goForward() { try { this.iframeEl.contentWindow.history.forward(); } catch(e){} }
     }
 
-    function setActiveTab(id) {
-      currentTabId = id;
+    function createNewTab(url = "") {
+      const id = "tab-" + Date.now();
+      const tab = new Tab(id, url ? "Loading..." : "New Tab", url);
+      
+      tabs.push(tab);
+      
+      const newBtn = document.querySelector(".new-tab-btn");
+      document.getElementById("tabBar").insertBefore(tab.tabEl, newBtn);
+      document.getElementById("viewportContainer").appendChild(tab.iframeEl);
 
-      tabsList.forEach(t => {
-        const isActive = t.id === id;
-        t.frame.classList.toggle('active-frame', isActive);
-      });
-
-      renderTabStrip();
-
-      const activeObj = tabsList.find(t => t.id === id);
-      omniboxInput.value = activeObj && activeObj.url ? activeObj.url : '';
+      switchTab(id);
     }
 
-    function closeTab(id, e) {
-      if (e) e.stopPropagation();
-      if (tabsList.length === 1) return;
+    function switchTab(id) {
+      activeTabId = id;
+      const homeScreen = document.getElementById("homeScreen");
+      const urlInput = document.getElementById("urlInput");
 
-      const index = tabsList.findIndex(t => t.id === id);
-      const targetTab = tabsList[index];
-
-      targetTab.frame.remove();
-      tabsList.splice(index, 1);
-
-      if (currentTabId === id) {
-        const fallback = tabsList[Math.max(0, index - 1)];
-        setActiveTab(fallback.id);
-      } else {
-        renderTabStrip();
-      }
-    }
-
-    function renderTabStrip() {
-      tabsContainer.innerHTML = '';
-      tabsList.forEach(t => {
-        const tabEl = document.createElement('div');
-        tabEl.className = `browser-tab ${t.id === currentTabId ? 'active-tab' : ''}`;
-        tabEl.onclick = () => setActiveTab(t.id);
-
-        const icon = document.createElement('span');
-        icon.innerText = '🌐';
-
-        const title = document.createElement('span');
-        title.className = 'tab-title-text';
-        title.innerText = t.title || 'New Tab';
-
-        const closeBtn = document.createElement('span');
-        closeBtn.className = 'tab-close-btn';
-        closeBtn.innerHTML = '&times;';
-        closeBtn.onclick = (e) => closeTab(t.id, e);
-
-        tabEl.appendChild(icon);
-        tabEl.appendChild(title);
-        tabEl.appendChild(closeBtn);
-        tabsContainer.appendChild(tabEl);
-      });
-    }
-
-    // 4. URL PARSER & BARE PROXY ROUTING
-    function submitSearch(e) {
-      if (e) e.preventDefault();
-      const query = omniboxInput.value.trim();
-      if (!query) return;
-
-      let target = query;
-      if (!query.startsWith('http://') && !query.startsWith('https://')) {
-        if (query.includes('.') && !query.includes(' ')) {
-          target = 'https://' + query;
+      tabs.forEach(t => {
+        if (t.id === id) {
+          t.tabEl.classList.add("active");
+          t.iframeEl.classList.add("active");
+          urlInput.value = t.url;
+          homeScreen.style.display = t.url ? "none" : "flex";
         } else {
-          target = 'https://www.google.com/search?q=' + encodeURIComponent(query);
+          t.tabEl.classList.remove("active");
+          t.iframeEl.classList.remove("active");
+        }
+      });
+    }
+
+    function closeTab(id, event) {
+      event.stopPropagation();
+      const index = tabs.findIndex(t => t.id === id);
+      if (index === -1) return;
+
+      const tabToRemove = tabs[index];
+      tabToRemove.tabEl.remove();
+      tabToRemove.iframeEl.remove(); // Unmounts frame to free browser memory
+      tabs.splice(index, 1);
+
+      if (activeTabId === id) {
+        if (tabs.length > 0) {
+          const nextTab = tabs[Math.max(0, index - 1)];
+          switchTab(nextTab.id);
+        } else {
+          activeTabId = null;
+          document.getElementById("urlInput").value = "";
+          document.getElementById("homeScreen").style.display = "flex";
         }
       }
+    }
 
-      const activeTab = tabsList.find(t => t.id === currentTabId);
-      if (activeTab) {
-        processNavigation(activeTab, target);
+    function getActiveTab() {
+      return tabs.find(t => t.id === activeTabId);
+    }
+
+    function handleUrlSubmit(e) {
+      if (e.key === "Enter") {
+        const val = e.target.value;
+        let active = getActiveTab();
+        if (!active) {
+          createNewTab(val);
+        } else {
+          active.loadUrl(val);
+          document.getElementById("homeScreen").style.display = "none";
+        }
       }
     }
 
-    function quickLaunch(url) {
-      omniboxInput.value = url;
-      submitSearch();
-    }
-
-    async function processNavigation(tabObj, targetUrl) {
-      tabObj.url = targetUrl;
-      tabObj.title = targetUrl.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0];
-      renderTabStrip();
-
-      activeBareIndex = 0;
-      connectThroughBarePool(tabObj, targetUrl);
-    }
-
-    async function connectThroughBarePool(tabObj, destination) {
-      if (activeBareIndex >= bareFailoverPool.length) {
-        setStatus("All Nodes Offline", "var(--red)");
-        return;
-      }
-
-      const currentBare = bareFailoverPool[activeBareIndex];
-      window.__uv$config.bare = currentBare;
-
-      if (activeBareIndex === 0) {
-        setStatus("Waking Server...", "var(--yellow)");
-        try { await fetch(currentBare, { method: 'GET', mode: 'no-cors' }).catch(() => {}); } catch(e) {}
+    function navigateActiveTab(url) {
+      document.getElementById("urlInput").value = url;
+      let active = getActiveTab();
+      if (!active) {
+        createNewTab(url);
       } else {
-        setStatus(`Failover Node ${activeBareIndex + 1}`, "var(--yellow)");
-      }
-
-      try {
-        const encoded = Ultraviolet.codec.xor.encode(destination);
-        tabObj.frame.srcdoc = ''; // Clear start page
-        tabObj.frame.src = window.__uv$config.prefix + encoded;
-
-        setStatus(activeBareIndex === 0 ? "Protected (Private)" : `Protected (Node ${activeBareIndex + 1})`, "var(--green)");
-
-      } catch (err) {
-        activeBareIndex++;
-        connectThroughBarePool(tabObj, destination);
+        active.loadUrl(url);
+        document.getElementById("homeScreen").style.display = "none";
       }
     }
 
-    function goBackTab() {
-      const cur = tabsList.find(t => t.id === currentTabId);
-      if (cur) try { cur.frame.contentWindow.history.back(); } catch(e){}
+    // Register Service Worker on Startup
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(() => {
+          document.getElementById('proxyStatus').innerText = "Proxy Connected";
+        })
+        .catch((err) => {
+          console.error("SW Registration failed:", err);
+          document.getElementById('proxyStatus').innerText = "Service Worker Error";
+          document.getElementById('proxyStatus').style.color = "#ef4444";
+        });
     }
 
-    function goForwardTab() {
-      const cur = tabsList.find(t => t.id === currentTabId);
-      if (cur) try { cur.frame.contentWindow.history.forward(); } catch(e){}
-    }
-
-    function reloadTab() {
-      const cur = tabsList.find(t => t.id === currentTabId);
-      if (cur) try { cur.frame.contentWindow.location.reload(); } catch(e){}
-    }
-
-    // Launch initial tab
-    openNewTab();
+    // Initialize with one default tab
+    createNewTab();
   </script>
 </body>
 </html>
