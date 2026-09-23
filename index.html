@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Browser Hub - S++++ Tier Ultimate Edition</title>
+  <title>Browser Hub - Permanent Dark Edition</title>
   
   <!-- Ultraviolet Core Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
 
   <script>
-    // GitHub Pages Subpath Auto-Resolver
+    // GitHub Pages / Subpath Auto-Resolver
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
     const repoSubpath = (window.location.hostname.includes('github.io') && pathSegments.length > 0) 
       ? '/' + pathSegments[0] + '/' 
@@ -51,20 +51,15 @@
     html, body {
       width: 100vw;
       height: 100vh;
-      background: var(--bg-darkest);
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, sans-serif;
+      background: var(--bg-darkest) !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif;
       color: var(--text-main);
       overflow: hidden;
-    }
-
-    body {
       display: flex;
       flex-direction: column;
     }
 
-    /* ==========================================
-       ANTI-NESTING / ANTI-STACKING CSS RULE
-       ========================================== */
+    /* ANTI-NESTING RULE FOR GOOGLE SITES & SAME-ORIGIN LOOPS */
     body.is-nested-frame #browser-app-header {
       display: none !important;
     }
@@ -72,7 +67,7 @@
       height: 100vh !important;
     }
 
-    /* --- BROWSER HEADER & TABS --- */
+    /* --- TOP HEADER & TABS --- */
     #browser-app-header {
       background: var(--bg-header);
       border-bottom: 1px solid var(--border);
@@ -80,7 +75,6 @@
       flex-direction: column;
       flex-shrink: 0;
       user-select: none;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
       z-index: 100;
     }
 
@@ -92,9 +86,6 @@
       gap: 6px;
       overflow-x: auto;
     }
-
-    #tab-strip::-webkit-scrollbar { height: 3px; }
-    #tab-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
     .browser-tab {
       display: flex;
@@ -111,13 +102,7 @@
       cursor: pointer;
       max-width: 200px;
       min-width: 120px;
-      transition: all 0.15s ease-in-out;
-      position: relative;
-    }
-
-    .browser-tab:hover {
-      background: var(--bg-bar);
-      color: var(--text-main);
+      transition: all 0.15s ease;
     }
 
     .browser-tab.active-tab {
@@ -126,11 +111,6 @@
       border-color: var(--border);
       border-bottom: 2px solid var(--accent);
       font-weight: 600;
-    }
-
-    .tab-icon {
-      font-size: 12px;
-      opacity: 0.7;
     }
 
     .tab-title-text {
@@ -149,7 +129,6 @@
       justify-content: center;
       font-size: 12px;
       color: var(--text-muted);
-      transition: all 0.15s;
     }
 
     .tab-close-btn:hover {
@@ -165,15 +144,11 @@
       padding: 4px 10px;
       cursor: pointer;
       border-radius: 6px;
-      transition: all 0.15s;
     }
 
-    #add-tab-btn:hover {
-      background: var(--bg-hover);
-      color: var(--text-main);
-    }
+    #add-tab-btn:hover { background: var(--bg-hover); color: var(--text-main); }
 
-    /* --- OMNIBOX & NAVIGATION CONTROL BAR --- */
+    /* --- NAVIGATION BAR --- */
     #nav-controls-bar {
       background: var(--bg-bar);
       padding: 8px 14px;
@@ -194,18 +169,11 @@
       align-items: center;
       justify-content: center;
       font-size: 14px;
-      transition: all 0.15s;
     }
 
-    .nav-btn:hover {
-      background: var(--bg-hover);
-      border-color: var(--text-muted);
-    }
+    .nav-btn:hover { background: var(--bg-hover); }
 
-    #omnibox-form {
-      flex-grow: 1;
-      display: flex;
-    }
+    #omnibox-form { flex-grow: 1; display: flex; }
 
     #omnibox-input {
       width: 100%;
@@ -217,7 +185,6 @@
       color: var(--text-main);
       outline: none;
       font-size: 13.5px;
-      transition: all 0.2s ease;
     }
 
     #omnibox-input:focus {
@@ -236,7 +203,7 @@
       white-space: nowrap;
     }
 
-    /* --- SPEED DIAL BOOKMARKS BAR --- */
+    /* --- BOOKMARKS BAR --- */
     #quick-bookmarks {
       background: var(--bg-bar);
       padding: 2px 14px 8px 14px;
@@ -255,25 +222,23 @@
       font-size: 11.5px;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.15s ease;
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
 
     .bookmark-btn:hover {
       color: var(--text-main);
       border-color: var(--accent);
       background: var(--bg-hover);
-      transform: translateY(-1px);
     }
 
     /* --- VIEWPORT CONTAINER --- */
     #viewport-container {
-      flex-grow: 1;
+      flex: 1;
       width: 100%;
+      height: 100%;
       position: relative;
-      background: #ffffff;
+      background: var(--bg-darkest) !important;
+      display: flex;
+      min-height: 0;
     }
 
     .browser-frame {
@@ -281,54 +246,17 @@
       height: 100%;
       border: none;
       display: none;
-      background: #ffffff;
+      background: var(--bg-darkest) !important;
+      flex: 1;
     }
 
     .browser-frame.active-frame {
       display: block;
     }
-
-    /* NEW TAB HOMEPAGE STYLING */
-    .new-tab-page {
-      width: 100%;
-      height: 100%;
-      background: var(--bg-darkest);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 24px;
-      color: var(--text-main);
-    }
-
-    .speed-dial-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      max-width: 600px;
-      width: 90%;
-    }
-
-    .speed-card {
-      background: var(--bg-header);
-      border: 1px solid var(--border);
-      padding: 20px;
-      border-radius: 12px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .speed-card:hover {
-      border-color: var(--accent);
-      background: var(--bg-hover);
-      transform: translateY(-3px);
-    }
   </style>
 </head>
 <body>
 
-  <!-- BROWSER TOP UI CONTAINER -->
   <div id="browser-app-header">
     <div id="tab-strip">
       <div id="tabs-container" style="display:flex; gap:6px;"></div>
@@ -357,27 +285,19 @@
     </div>
   </div>
 
-  <!-- IFRAME VIEWPORT AREA -->
   <div id="viewport-container"></div>
 
   <script>
-    // ==========================================
     // 1. SMART CROSS-ORIGIN ANTI-NESTING LOCK
-    // ==========================================
     try {
       if (window.self !== window.top) {
-        // Check if page loaded inside another instance of itself on the same hostname
         if (window.parent.location.hostname === window.location.hostname) {
           document.body.classList.add('is-nested-frame');
         }
       }
-    } catch (e) {
-      // Cross-origin context (e.g. embedded inside Google Sites). Keep full UI visible!
-    }
+    } catch (e) {}
 
-    // ==========================================
-    // 2. HYDRA NETWORK (20 Failover Bare Servers)
-    // ==========================================
+    // 2. HYDRA NETWORK (Failover Bare Servers)
     const bareFailoverPool = [
       'https://bare-server-y5ch.onrender.com/bare/',
       'https://tomp.app/bare/',
@@ -390,10 +310,7 @@
       'https://flowos-bare.onrender.com/bare/',
       'https://bare.mathstudy.app/bare/',
       'https://bare.z1g.top/bare/',
-      'https://d.tomp.app/bare/',
-      'https://bare.titaniumnetwork.org/bare/',
-      'https://e.tomp.app/bare/',
-      'https://bare-server.mathstudy.app/bare/'
+      'https://d.tomp.app/bare/'
     ];
 
     let activeBareIndex = 0;
@@ -405,15 +322,43 @@
     const tabsContainer = document.getElementById('tabs-container');
     const viewportContainer = document.getElementById('viewport-container');
 
+    // Default Dark New Tab Page Content
+    const darkStartPageHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body {
+            background: #07090e;
+            color: #f0f6fc;
+            font-family: -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+          }
+          h1 { font-size: 28px; margin-bottom: 8px; color: #388bfd; }
+          p { color: #8b949e; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <h1>Browser Hub</h1>
+        <p>Type a URL or search query above to begin browsing.</p>
+      </body>
+      </html>
+    `;
+
     // Register UV Service Worker
     async function initServiceWorker() {
       if ('serviceWorker' in navigator) {
         try {
           await navigator.serviceWorker.register(window.__uv$config.sw, { scope: window.__uv$config.prefix });
           await navigator.serviceWorker.ready;
-          setStatus("System Ready", "var(--green)");
+          setStatus("Protected (Private)", "var(--green)");
         } catch (err) {
-          setStatus("Service Worker Error", "var(--yellow)");
+          setStatus("Service Worker Initializing...", "var(--yellow)");
         }
       }
     }
@@ -424,13 +369,10 @@
       statusPill.style.color = color;
     }
 
-    // ==========================================
-    // 3. MULTI-TAB ARCHITECTURE & MANAGEMENT
-    // ==========================================
+    // 3. TAB MANAGEMENT
     function openNewTab(url = '') {
       const id = 'tab-' + Math.random().toString(36).substr(2, 9);
 
-      // Create dedicated iframe for this tab
       const frame = document.createElement('iframe');
       frame.className = 'browser-frame';
       frame.id = 'frame-' + id;
@@ -438,6 +380,10 @@
 
       const tabObject = { id: id, title: 'New Tab', url: url, frame: frame };
       tabsList.push(tabObject);
+
+      if (!url) {
+        frame.srcdoc = darkStartPageHtml;
+      }
 
       setActiveTab(id);
 
@@ -462,7 +408,7 @@
 
     function closeTab(id, e) {
       if (e) e.stopPropagation();
-      if (tabsList.length === 1) return; // Always keep 1 tab open
+      if (tabsList.length === 1) return;
 
       const index = tabsList.findIndex(t => t.id === id);
       const targetTab = tabsList[index];
@@ -486,7 +432,6 @@
         tabEl.onclick = () => setActiveTab(t.id);
 
         const icon = document.createElement('span');
-        icon.className = 'tab-icon';
         icon.innerText = '🌐';
 
         const title = document.createElement('span');
@@ -505,9 +450,7 @@
       });
     }
 
-    // ==========================================
     // 4. URL PARSER & BARE PROXY ROUTING
-    // ==========================================
     function submitSearch(e) {
       if (e) e.preventDefault();
       const query = omniboxInput.value.trim();
@@ -538,7 +481,7 @@
       tabObj.title = targetUrl.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0];
       renderTabStrip();
 
-      activeBareIndex = 0; // Start with main private Bare server
+      activeBareIndex = 0;
       connectThroughBarePool(tabObj, targetUrl);
     }
 
@@ -560,14 +503,10 @@
 
       try {
         const encoded = Ultraviolet.codec.xor.encode(destination);
+        tabObj.frame.srcdoc = ''; // Clear start page
         tabObj.frame.src = window.__uv$config.prefix + encoded;
 
         setStatus(activeBareIndex === 0 ? "Protected (Private)" : `Protected (Node ${activeBareIndex + 1})`, "var(--green)");
-
-        tabObj.frame.onerror = () => {
-          activeBareIndex++;
-          connectThroughBarePool(tabObj, destination);
-        };
 
       } catch (err) {
         activeBareIndex++;
