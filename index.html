@@ -13,7 +13,7 @@
 
     window.__uv$config = {
       prefix: repoSubpath + 'uv/service/',
-      bare: 'https://bare-server-y5ch.onrender.com/bare/', // Primary Private Render Server[cite: 2]
+      bare: 'https://bare-server-y5ch.onrender.com/bare/',
       encodeUrl: Ultraviolet.codec.xor.encode,
       decodeUrl: Ultraviolet.codec.xor.decode,
       handler: 'https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.handler.js',
@@ -24,37 +24,58 @@
     };
   </script>
   <style>
-    :root {
-      --bg-main: #0f1117;
-      --bg-bar: #161b22;
-      --border: #30363d;
-      --text: #f0f6fc;
-      --accent: #58a6ff;
-      --success: #3fb950;
-      --error: #ff7b72;
-    }
+    * { box-sizing: border-box; }
     body {
-      margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh;
-      background: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-      color: var(--text); overflow: hidden;
+      margin: 0; 
+      padding: 0; 
+      display: flex; 
+      flex-direction: column; 
+      height: 100vh; 
+      background: #0f1117; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      color: #f0f6fc; 
+      overflow: hidden;
     }
     #browser-bar {
-      background: var(--bg-bar); padding: 10px 15px; display: flex; align-items: center; gap: 10px;
-      border-bottom: 1px solid var(--border); flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      background: #161b22; 
+      padding: 10px 15px; 
+      display: flex; 
+      align-items: center; 
+      gap: 10px;
+      border-bottom: 1px solid #30363d; 
+      flex-shrink: 0; 
+      height: 50px;
     }
     .browser-btn {
-      background: #21262d; border: 1px solid var(--border); color: var(--text);
-      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s;
+      background: #21262d; 
+      border: 1px solid #30363d; 
+      color: #f0f6fc;
+      padding: 6px 12px; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-size: 14px;
     }
     .browser-btn:hover { background: #30363d; }
     #search-form { flex-grow: 1; display: flex; }
     input {
-      width: 100%; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border);
-      background: #0d1117; color: var(--text); outline: none; font-size: 14px;
+      width: 100%; 
+      padding: 8px 14px; 
+      border-radius: 6px; 
+      border: 1px solid #30363d;
+      background: #0d1117; 
+      color: #f0f6fc; 
+      outline: none; 
+      font-size: 14px;
     }
-    input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15); }
-    #status { font-size: 11px; color: #8b949e; white-space: nowrap; font-weight: 500; min-width: 130px; text-align: right; }
-    iframe { flex-grow: 1; border: none; width: 100%; height: 100%; background: #ffffff; }
+    input:focus { border-color: #58a6ff; }
+    #status { font-size: 11px; color: #8b949e; white-space: nowrap; min-width: 110px; text-align: right; }
+    #proxy-frame {
+      flex-grow: 1; 
+      border: none; 
+      width: 100%; 
+      height: calc(100vh - 50px); 
+      background: #ffffff;
+    }
   </style>
 </head>
 <body>
@@ -73,9 +94,9 @@
 
   <script>
     const bareServers = [
-      'https://bare-server-y5ch.onrender.com/bare/', // Primary Private Render Server[cite: 2]
-      'https://tomp.app/',                          // Backup 1
-      'https://bare.benrovers.noc.st/'             // Backup 2
+      'https://bare-server-y5ch.onrender.com/bare/',
+      'https://tomp.app/',
+      'https://bare.benrovers.noc.st/'
     ];
 
     let activeBareIndex = 0;
@@ -90,10 +111,10 @@
         await navigator.serviceWorker.register('./sw.js', { scope: './' });
         await navigator.serviceWorker.ready;
         statusEl.innerText = "Ready";
-        statusEl.style.color = "var(--success)";
+        statusEl.style.color = "#3fb950";
       } catch (err) {
         statusEl.innerText = "Ready";
-        statusEl.style.color = "var(--success)";
+        statusEl.style.color = "#3fb950";
       }
     }
     initServiceWorker();
@@ -118,17 +139,16 @@
     async function attemptConnection() {
       if (activeBareIndex >= bareServers.length) {
         statusEl.innerText = "All servers failed";
-        statusEl.style.color = "var(--error)";
+        statusEl.style.color = "#ff7b72";
         return;
       }
 
       const currentBare = bareServers[activeBareIndex];
       window.__uv$config.bare = currentBare;
 
-      statusEl.innerText = activeBareIndex === 0 ? "Waking Render server..." : `Trying fallback #${activeBareIndex}...`;
-      statusEl.style.color = "var(--accent)";
+      statusEl.innerText = activeBareIndex === 0 ? "Waking Render..." : `Fallback #${activeBareIndex}`;
+      statusEl.style.color = "#58a6ff";
 
-      // Wake up Render instance if it's sleeping
       if (activeBareIndex === 0) {
         try {
           await fetch(currentBare, { method: 'GET', mode: 'no-cors' }).catch(() => {});
@@ -138,9 +158,8 @@
       try {
         const encoded = Ultraviolet.codec.xor.encode(pendingUrl);
         frame.src = window.__uv$config.prefix + encoded;
-        
-        statusEl.innerText = activeBareIndex === 0 ? "Active (Private)" : `Active (Fallback #${activeBareIndex})`;
-        statusEl.style.color = "var(--success)";
+        statusEl.innerText = activeBareIndex === 0 ? "Active" : `Active (Fallback)`;
+        statusEl.style.color = "#3fb950";
       } catch (err) {
         activeBareIndex++;
         attemptConnection();
