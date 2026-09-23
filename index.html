@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Browser Hub - S+++++++ Edition</title>
+  <title>Browser Hub - S++++ Tier Edition</title>
   <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
+  
   <script>
+    // GitHub Pages Base Path Resolution
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
     const repoSubpath = (window.location.hostname.includes('github.io') && pathSegments.length > 0) 
       ? '/' + pathSegments[0] + '/' 
@@ -23,176 +25,480 @@
       sw: repoSubpath + 'sw.js',
     };
   </script>
+
   <style>
-    * { box-sizing: border-box; }
+    :root {
+      --bg-primary: #0a0c10;
+      --bg-secondary: #161b22;
+      --bg-tertiary: #21262d;
+      --accent: #2f81f7;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --border: #30363d;
+      --border-hover: #8b949e;
+      --status-green: #3fb950;
+      --status-yellow: #d29922;
+      --status-red: #ff7b72;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     html, body {
-      margin: 0; padding: 0; width: 100%; height: 100%;
-      background: #0f1117; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-      color: #f0f6fc; overflow: hidden;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text-main);
+      overflow: hidden;
     }
-    body { display: flex; flex-direction: column; }
-    #browser-bar {
-      background: #161b22; padding: 10px 15px; display: flex; align-items: center; gap: 10px;
-      border-bottom: 1px solid #30363d; flex-shrink: 0; height: 50px; width: 100%;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 10;
+
+    body {
+      display: flex;
+      flex-direction: column;
     }
-    .browser-btn {
-      background: #21262d; border: 1px solid #30363d; color: #f0f6fc;
-      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s;
+
+    /* ANTI-NESTING RULE: Completely hides navigation UI if loaded inside itself */
+    .is-nested #browser-header { display: none !important; }
+    .is-nested #viewport-container { height: 100vh !important; }
+
+    /* --- BROWSER HEADER & TABS --- */
+    #browser-header {
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      user-select: none;
     }
-    .browser-btn:hover { background: #30363d; }
-    #search-form { flex-grow: 1; display: flex; }
-    input {
-      width: 100%; padding: 8px 14px; border-radius: 6px; border: 1px solid #30363d;
-      background: #0d1117; color: #f0f6fc; outline: none; font-size: 14px; transition: all 0.2s;
+
+    #tab-bar {
+      display: flex;
+      align-items: center;
+      background: #010409;
+      padding: 6px 8px 0 8px;
+      gap: 4px;
+      overflow-x: auto;
     }
-    input:focus { border-color: #58a6ff; box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15); }
-    #status { font-size: 11px; color: #8b949e; white-space: nowrap; min-width: 140px; text-align: right; font-weight: 600; }
-    #proxy-frame {
-      flex-grow: 1; border: none; width: 100%; height: calc(100vh - 50px); background: #ffffff;
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      padding: 6px 12px;
+      border-radius: 8px 8px 0 0;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      max-width: 180px;
+      min-width: 100px;
+      transition: all 0.15s ease;
+    }
+
+    .tab.active {
+      background: var(--bg-secondary);
+      color: var(--text-main);
+      border-color: var(--border);
+      border-bottom: 2px solid var(--accent);
+      font-weight: 600;
+    }
+
+    .tab-title {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex-grow: 1;
+    }
+
+    .tab-close {
+      border-radius: 50%;
+      width: 14px;
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+
+    .tab-close:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--status-red);
+    }
+
+    #new-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 16px;
+      padding: 4px 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    #new-tab-btn:hover { background: var(--bg-tertiary); color: var(--text-main); }
+
+    /* --- NAVIGATION BAR --- */
+    #nav-bar {
+      background: var(--bg-secondary);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .nav-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .nav-btn:hover { background: var(--border); border-color: var(--border-hover); }
+
+    #omnibox-form {
+      flex-grow: 1;
+      display: flex;
+    }
+
+    #omnibox {
+      width: 100%;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-primary);
+      color: var(--text-main);
+      outline: none;
+      font-size: 13px;
+      transition: all 0.15s ease;
+    }
+
+    #omnibox:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.2);
+    }
+
+    #status-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    /* --- QUICK LAUNCH BOOKMARKS BAR --- */
+    #bookmarks-bar {
+      background: var(--bg-secondary);
+      padding: 4px 12px 8px 12px;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bookmark-chip {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .bookmark-chip:hover {
+      color: var(--text-main);
+      border-color: var(--accent);
+      background: var(--bg-tertiary);
+    }
+
+    /* --- VIEWPORT CONTAINER --- */
+    #viewport-container {
+      flex-grow: 1;
+      width: 100%;
+      position: relative;
+      background: #ffffff;
+    }
+
+    .tab-frame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: none;
+      background: #ffffff;
+    }
+
+    .tab-frame.active {
+      display: block;
     }
   </style>
 </head>
 <body>
 
-  <div id="browser-bar">
-    <button class="browser-btn" onclick="goBack()" title="Back">&#8592;</button>
-    <button class="browser-btn" onclick="goForward()" title="Forward">&#8594;</button>
-    <button class="browser-btn" onclick="reloadFrame()" title="Reload">&#8635;</button>
-    <form id="search-form" onsubmit="loadURL(event)">
-      <input type="text" id="url-input" placeholder="Search or enter website URL..." autocomplete="off" autofocus>
-    </form>
-    <div id="status">Waking Systems...</div>
+  <div id="browser-header">
+    <div id="tab-bar">
+      <div id="tabs-wrapper" style="display:flex; gap:4px;"></div>
+      <button id="new-tab-btn" onclick="createNewTab()" title="New Tab">+</button>
+    </div>
+
+    <div id="nav-bar">
+      <button class="nav-btn" onclick="activeTabGoBack()" title="Back">&#8592;</button>
+      <button class="nav-btn" onclick="activeTabGoForward()" title="Forward">&#8594;</button>
+      <button class="nav-btn" onclick="activeTabReload()" title="Reload">&#8635;</button>
+      
+      <form id="omnibox-form" onsubmit="handleSearch(event)">
+        <input type="text" id="omnibox" placeholder="Search with Google or enter URL..." autocomplete="off">
+      </form>
+
+      <div id="status-badge">Initializing Engine...</div>
+    </div>
+
+    <div id="bookmarks-bar">
+      <div class="bookmark-chip" onclick="quickNavigate('https://google.com')">Google</div>
+      <div class="bookmark-chip" onclick="quickNavigate('https://youtube.com')">YouTube</div>
+      <div class="bookmark-chip" onclick="quickNavigate('https://discord.com')">Discord</div>
+      <div class="bookmark-chip" onclick="quickNavigate('https://wikipedia.org')">Wikipedia</div>
+      <div class="bookmark-chip" onclick="quickNavigate('https://github.com')">GitHub</div>
+      <div class="bookmark-chip" onclick="quickNavigate('https://reddit.com')">Reddit</div>
+    </div>
   </div>
 
-  <iframe id="proxy-frame"></iframe>
+  <div id="viewport-container"></div>
 
   <script>
     // ==========================================
-    // S+++++++ GOOGLE SITES & ANTI-NESTING GUARD
+    // 1. SMART ANTI-NESTING / ANTI-STACKING LOCK
     // ==========================================
-    let isNestedInItself = false;
     try {
-      // If we can read the parent's URL and it matches ours, we are glitching/stacking.
-      if (window.top.location.hostname === window.location.hostname) {
-        if (window.self !== window.top) isNestedInItself = true;
+      if (window.self !== window.top) {
+        // If parent domain matches ours, we are nesting inside ourselves! Hide header.
+        if (window.parent.location.hostname === window.location.hostname) {
+          document.body.classList.add('is-nested');
+        }
       }
     } catch (e) {
-      // If we get a Cross-Origin error, it means we are safely embedded in Google Sites!
-      // We WANT to keep the UI visible in this case.
-      isNestedInItself = false; 
-    }
-
-    if (isNestedInItself) {
-      document.getElementById('browser-bar').style.display = 'none';
-      document.getElementById('proxy-frame').style.height = '100vh';
+      // Cross-origin context (e.g. Google Sites embed) -> Allow normal UI!
     }
 
     // ==========================================
-    // THE HYDRA NETWORK (Massive Bare Server Array)
+    // 2. HYDRA NETWORK BARE ENDPOINTS (20 Node Pool)
     // ==========================================
-    const bareServers = [
-      'https://bare-server-y5ch.onrender.com/bare/', // 1. Your Private Server (Primary)
-      'https://tomp.app/bare/',                     // 2. Tomp Network Primary
-      'https://bare.benrovers.noc.st/bare/',       // 3. Benrovers Primary
-      'https://b.tomp.app/bare/',                   // 4. Tomp Network B
-      'https://solar-1.benrovers.noc.st/bare/',     // 5. Benrovers Solar
-      'https://c.tomp.app/bare/',                   // 6. Tomp Network C
-      'https://lunar-1.benrovers.noc.st/bare/',     // 7. Benrovers Lunar
-      'https://bare.starlightproxy.com/bare/',      // 8. Starlight Public
-      'https://flowos-bare.onrender.com/bare/',     // 9. FlowOS Public Node
-      'https://bare.mathstudy.app/bare/',           // 10. MathStudy Node
-      'https://bare.z1g.top/bare/',                 // 11. Z1G Public Node
-      'https://d.tomp.app/bare/',                   // 12. Tomp Network D
-      'https://bare.titaniumnetwork.org/bare/',     // 13. TN Official (Fallback)
-      'https://e.tomp.app/bare/',                   // 14. Tomp Network E
-      'https://bare-server.mathstudy.app/bare/'     // 15. MathStudy Alternate
-      // It will cycle through these at lightning speed until one connects.
+    const bareNetwork = [
+      'https://bare-server-y5ch.onrender.com/bare/',
+      'https://tomp.app/bare/',
+      'https://bare.benrovers.noc.st/bare/',
+      'https://b.tomp.app/bare/',
+      'https://solar-1.benrovers.noc.st/bare/',
+      'https://c.tomp.app/bare/',
+      'https://lunar-1.benrovers.noc.st/bare/',
+      'https://bare.starlightproxy.com/bare/',
+      'https://flowos-bare.onrender.com/bare/',
+      'https://bare.mathstudy.app/bare/',
+      'https://bare.z1g.top/bare/',
+      'https://d.tomp.app/bare/',
+      'https://bare.titaniumnetwork.org/bare/',
+      'https://e.tomp.app/bare/',
+      'https://bare-server.mathstudy.app/bare/'
     ];
 
     let activeBareIndex = 0;
-    let pendingUrl = '';
-    const frame = document.getElementById('proxy-frame');
-    const input = document.getElementById('url-input');
-    const statusEl = document.getElementById('status');
+    let tabs = [];
+    let activeTabId = null;
 
-    async function initServiceWorker() {
-      if (!('serviceWorker' in navigator)) return;
-      try {
-        await navigator.serviceWorker.register(window.__uv$config.sw, { scope: window.__uv$config.prefix });
-        await navigator.serviceWorker.ready;
-        if (!isNestedInItself) {
-          statusEl.innerText = "System Ready";
-          statusEl.style.color = "#3fb950";
-        }
-      } catch (err) {
-        if (!isNestedInItself) {
-          statusEl.innerText = "SW Error - Retrying";
-          statusEl.style.color = "#d29922";
+    const statusBadge = document.getElementById('status-badge');
+    const omnibox = document.getElementById('omnibox');
+    const tabsWrapper = document.getElementById('tabs-wrapper');
+    const viewportContainer = document.getElementById('viewport-container');
+
+    // Init Service Worker
+    async function initWorker() {
+      if ('serviceWorker' in navigator) {
+        try {
+          await navigator.serviceWorker.register(window.__uv$config.sw, { scope: window.__uv$config.prefix });
+          await navigator.serviceWorker.ready;
+          updateStatus("Engine Ready", "--status-green");
+        } catch (e) {
+          updateStatus("SW Offline", "--status-yellow");
         }
       }
     }
-    initServiceWorker();
+    initWorker();
 
-    function goBack() { try { frame.contentWindow.history.back(); } catch(e){} }
-    function goForward() { try { frame.contentWindow.history.forward(); } catch(e){} }
-    function reloadFrame() { frame.contentWindow.location.reload(); }
-
-    async function loadURL(e) {
-      if (e) e.preventDefault();
-      let val = input.value.trim();
-      if (!val) return;
-
-      // Smart URL parsing
-      pendingUrl = val.startsWith('http://') || val.startsWith('https://') 
-        ? val 
-        : (val.includes('.') && !val.includes(' ') ? 'https://' + val : 'https://www.google.com/search?q=' + encodeURIComponent(val));
-
-      activeBareIndex = 0; // Always try your private server first
-      attemptConnection();
+    function updateStatus(text, cssVarColor) {
+      statusBadge.innerText = text;
+      statusBadge.style.color = `var(${cssVarColor})`;
     }
 
-    async function attemptConnection() {
-      if (activeBareIndex >= bareServers.length) {
-        statusEl.innerText = "Network Offline";
-        statusEl.style.color = "#ff7b72";
+    // ==========================================
+    // 3. MULTI-TAB CONTROLLER
+    // ==========================================
+    function createNewTab(initialUrl = '') {
+      const tabId = 'tab-' + Math.random().toString(36).substr(2, 9);
+      
+      const frame = document.createElement('iframe');
+      frame.className = 'tab-frame';
+      frame.id = 'frame-' + tabId;
+      viewportContainer.appendChild(frame);
+
+      const tabData = { id: tabId, title: 'New Tab', url: initialUrl, frame: frame };
+      tabs.push(tabData);
+
+      switchTab(tabId);
+
+      if (initialUrl) {
+        navigateTab(tabData, initialUrl);
+      }
+    }
+
+    function switchTab(tabId) {
+      activeTabId = tabId;
+      tabs.forEach(t => {
+        const isCurrent = t.id === tabId;
+        t.frame.classList.toggle('active', isCurrent);
+      });
+      renderTabs();
+      
+      const currentTab = tabs.find(t => t.id === tabId);
+      omnibox.value = currentTab && currentTab.url ? currentTab.url : '';
+    }
+
+    function closeTab(tabId, event) {
+      if (event) event.stopPropagation();
+      if (tabs.length === 1) return; // Keep at least 1 tab open
+
+      const index = tabs.findIndex(t => t.id === tabId);
+      const tabData = tabs[index];
+      
+      tabData.frame.remove();
+      tabs.splice(index, 1);
+
+      if (activeTabId === tabId) {
+        const nextTab = tabs[Math.max(0, index - 1)];
+        switchTab(nextTab.id);
+      } else {
+        renderTabs();
+      }
+    }
+
+    function renderTabs() {
+      tabsWrapper.innerHTML = '';
+      tabs.forEach(t => {
+        const el = document.createElement('div');
+        el.className = `tab ${t.id === activeTabId ? 'active' : ''}`;
+        el.onclick = () => switchTab(t.id);
+
+        const titleSpan = document.createElement('span');
+        titleSpan.className = 'tab-title';
+        titleSpan.innerText = t.title || 'New Tab';
+
+        const closeBtn = document.createElement('span');
+        closeBtn.className = 'tab-close';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.onclick = (e) => closeTab(t.id, e);
+
+        el.appendChild(titleSpan);
+        el.appendChild(closeBtn);
+        tabsWrapper.appendChild(el);
+      });
+    }
+
+    // ==========================================
+    // 4. NAVIGATION & PROXY ENGINE
+    // ==========================================
+    function handleSearch(e) {
+      if (e) e.preventDefault();
+      const query = omnibox.value.trim();
+      if (!query) return;
+
+      let targetUrl = query;
+      if (!query.startsWith('http://') && !query.startsWith('https://')) {
+        if (query.includes('.') && !query.includes(' ')) {
+          targetUrl = 'https://' + query;
+        } else {
+          targetUrl = 'https://www.google.com/search?q=' + encodeURIComponent(query);
+        }
+      }
+
+      const currentTab = tabs.find(t => t.id === activeTabId);
+      if (currentTab) {
+        navigateTab(currentTab, targetUrl);
+      }
+    }
+
+    function quickNavigate(url) {
+      omnibox.value = url;
+      handleSearch();
+    }
+
+    async function navigateTab(tabData, url) {
+      tabData.url = url;
+      tabData.title = url.replace('https://', '').replace('www.', '').split('/')[0];
+      renderTabs();
+
+      activeBareIndex = 0; // Always start with primary private server
+      executeProxyRoute(tabData, url);
+    }
+
+    async function executeProxyRoute(tabData, targetUrl) {
+      if (activeBareIndex >= bareNetwork.length) {
+        updateStatus("All Nodes Failed", "--status-red");
         return;
       }
 
-      const currentBare = bareServers[activeBareIndex];
-      window.__uv$config.bare = currentBare;
+      const currentEndpoint = bareNetwork[activeBareIndex];
+      window.__uv$config.bare = currentEndpoint;
 
       if (activeBareIndex === 0) {
-        statusEl.innerText = "Waking Render (30s)...";
-        statusEl.style.color = "#58a6ff";
-        // Ping Render to wake it up
-        try { await fetch(currentBare, { method: 'GET', mode: 'no-cors' }).catch(() => {}); } catch(e) {}
+        updateStatus("Waking Private Server...", "--status-yellow");
+        try { await fetch(currentEndpoint, { method: 'GET', mode: 'no-cors' }).catch(() => {}); } catch(e){}
       } else {
-        statusEl.innerText = `Trying Node ${activeBareIndex + 1}/${bareServers.length}...`;
-        statusEl.style.color = "#d29922";
+        updateStatus(`Fallback Node ${activeBareIndex + 1}`, "--status-yellow");
       }
 
       try {
-        const encoded = Ultraviolet.codec.xor.encode(pendingUrl);
+        const encodedUrl = Ultraviolet.codec.xor.encode(targetUrl);
+        tabData.frame.src = window.__uv$config.prefix + encodedUrl;
         
-        // This triggers the iframe to route through the Service Worker
-        frame.src = window.__uv$config.prefix + encoded;
-        
-        // We assume connection success if it doesn't throw a synchronous error
-        statusEl.innerText = activeBareIndex === 0 ? "Secured (Private)" : `Secured (Node ${activeBareIndex + 1})`;
-        statusEl.style.color = "#3fb950";
-
-        // Listen for iframe load errors (if the bare server is totally dead)
-        frame.onerror = () => {
-          activeBareIndex++;
-          attemptConnection();
-        };
-
+        updateStatus(activeBareIndex === 0 ? "Connected (Private)" : `Connected (Node ${activeBareIndex + 1})`, "--status-green");
       } catch (err) {
         activeBareIndex++;
-        attemptConnection();
+        executeProxyRoute(tabData, targetUrl);
       }
     }
+
+    function activeTabGoBack() {
+      const cur = tabs.find(t => t.id === activeTabId);
+      if (cur) try { cur.frame.contentWindow.history.back(); } catch(e){}
+    }
+
+    function activeTabGoForward() {
+      const cur = tabs.find(t => t.id === activeTabId);
+      if (cur) try { cur.frame.contentWindow.history.forward(); } catch(e){}
+    }
+
+    function activeTabReload() {
+      const cur = tabs.find(t => t.id === activeTabId);
+      if (cur) try { cur.frame.contentWindow.location.reload(); } catch(e){}
+    }
+
+    // Initialize first default tab
+    createNewTab();
   </script>
 </body>
 </html>
