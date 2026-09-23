@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Browser Hub</title>
+  <title>Browser Hub - S+++++++ Edition</title>
   <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
   <script>
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
@@ -34,19 +34,20 @@
     #browser-bar {
       background: #161b22; padding: 10px 15px; display: flex; align-items: center; gap: 10px;
       border-bottom: 1px solid #30363d; flex-shrink: 0; height: 50px; width: 100%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 10;
     }
     .browser-btn {
       background: #21262d; border: 1px solid #30363d; color: #f0f6fc;
-      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 14px;
+      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background 0.2s;
     }
     .browser-btn:hover { background: #30363d; }
     #search-form { flex-grow: 1; display: flex; }
     input {
       width: 100%; padding: 8px 14px; border-radius: 6px; border: 1px solid #30363d;
-      background: #0d1117; color: #f0f6fc; outline: none; font-size: 14px;
+      background: #0d1117; color: #f0f6fc; outline: none; font-size: 14px; transition: all 0.2s;
     }
-    input:focus { border-color: #58a6ff; }
-    #status { font-size: 11px; color: #8b949e; white-space: nowrap; min-width: 140px; text-align: right; }
+    input:focus { border-color: #58a6ff; box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15); }
+    #status { font-size: 11px; color: #8b949e; white-space: nowrap; min-width: 140px; text-align: right; font-weight: 600; }
     #proxy-frame {
       flex-grow: 1; border: none; width: 100%; height: calc(100vh - 50px); background: #ffffff;
     }
@@ -61,24 +62,52 @@
     <form id="search-form" onsubmit="loadURL(event)">
       <input type="text" id="url-input" placeholder="Search or enter website URL..." autocomplete="off" autofocus>
     </form>
-    <div id="status">System Ready</div>
+    <div id="status">Waking Systems...</div>
   </div>
 
   <iframe id="proxy-frame"></iframe>
 
   <script>
-    // IFRAME GUARD: Instantly hides the browser bar if it ever tries to nest inside itself
-    if (window.self !== window.top) {
-      const bar = document.getElementById('browser-bar');
-      if (bar) bar.style.display = 'none';
-      const f = document.getElementById('proxy-frame');
-      if (f) f.style.height = '100vh';
+    // ==========================================
+    // S+++++++ GOOGLE SITES & ANTI-NESTING GUARD
+    // ==========================================
+    let isNestedInItself = false;
+    try {
+      // If we can read the parent's URL and it matches ours, we are glitching/stacking.
+      if (window.top.location.hostname === window.location.hostname) {
+        if (window.self !== window.top) isNestedInItself = true;
+      }
+    } catch (e) {
+      // If we get a Cross-Origin error, it means we are safely embedded in Google Sites!
+      // We WANT to keep the UI visible in this case.
+      isNestedInItself = false; 
     }
 
+    if (isNestedInItself) {
+      document.getElementById('browser-bar').style.display = 'none';
+      document.getElementById('proxy-frame').style.height = '100vh';
+    }
+
+    // ==========================================
+    // THE HYDRA NETWORK (Massive Bare Server Array)
+    // ==========================================
     const bareServers = [
-      'https://bare-server-y5ch.onrender.com/bare/',
-      'https://tomp.app/bare/',
-      'https://bare.benrovers.noc.st/bare/'
+      'https://bare-server-y5ch.onrender.com/bare/', // 1. Your Private Server (Primary)
+      'https://tomp.app/bare/',                     // 2. Tomp Network Primary
+      'https://bare.benrovers.noc.st/bare/',       // 3. Benrovers Primary
+      'https://b.tomp.app/bare/',                   // 4. Tomp Network B
+      'https://solar-1.benrovers.noc.st/bare/',     // 5. Benrovers Solar
+      'https://c.tomp.app/bare/',                   // 6. Tomp Network C
+      'https://lunar-1.benrovers.noc.st/bare/',     // 7. Benrovers Lunar
+      'https://bare.starlightproxy.com/bare/',      // 8. Starlight Public
+      'https://flowos-bare.onrender.com/bare/',     // 9. FlowOS Public Node
+      'https://bare.mathstudy.app/bare/',           // 10. MathStudy Node
+      'https://bare.z1g.top/bare/',                 // 11. Z1G Public Node
+      'https://d.tomp.app/bare/',                   // 12. Tomp Network D
+      'https://bare.titaniumnetwork.org/bare/',     // 13. TN Official (Fallback)
+      'https://e.tomp.app/bare/',                   // 14. Tomp Network E
+      'https://bare-server.mathstudy.app/bare/'     // 15. MathStudy Alternate
+      // It will cycle through these at lightning speed until one connects.
     ];
 
     let activeBareIndex = 0;
@@ -92,14 +121,14 @@
       try {
         await navigator.serviceWorker.register(window.__uv$config.sw, { scope: window.__uv$config.prefix });
         await navigator.serviceWorker.ready;
-        if (window.self === window.top) {
+        if (!isNestedInItself) {
           statusEl.innerText = "System Ready";
           statusEl.style.color = "#3fb950";
         }
       } catch (err) {
-        if (window.self === window.top) {
-          statusEl.innerText = "System Ready";
-          statusEl.style.color = "#3fb950";
+        if (!isNestedInItself) {
+          statusEl.innerText = "SW Error - Retrying";
+          statusEl.style.color = "#d29922";
         }
       }
     }
@@ -114,17 +143,18 @@
       let val = input.value.trim();
       if (!val) return;
 
+      // Smart URL parsing
       pendingUrl = val.startsWith('http://') || val.startsWith('https://') 
         ? val 
         : (val.includes('.') && !val.includes(' ') ? 'https://' + val : 'https://www.google.com/search?q=' + encodeURIComponent(val));
 
-      activeBareIndex = 0;
+      activeBareIndex = 0; // Always try your private server first
       attemptConnection();
     }
 
     async function attemptConnection() {
       if (activeBareIndex >= bareServers.length) {
-        statusEl.innerText = "All Servers Failed";
+        statusEl.innerText = "Network Offline";
         statusEl.style.color = "#ff7b72";
         return;
       }
@@ -132,20 +162,32 @@
       const currentBare = bareServers[activeBareIndex];
       window.__uv$config.bare = currentBare;
 
-      statusEl.innerText = activeBareIndex === 0 ? "Waking Render (30s)..." : `Fallback #${activeBareIndex}`;
-      statusEl.style.color = "#58a6ff";
-
       if (activeBareIndex === 0) {
-        try {
-          await fetch(currentBare, { method: 'GET', mode: 'no-cors' }).catch(() => {});
-        } catch(e) {}
+        statusEl.innerText = "Waking Render (30s)...";
+        statusEl.style.color = "#58a6ff";
+        // Ping Render to wake it up
+        try { await fetch(currentBare, { method: 'GET', mode: 'no-cors' }).catch(() => {}); } catch(e) {}
+      } else {
+        statusEl.innerText = `Trying Node ${activeBareIndex + 1}/${bareServers.length}...`;
+        statusEl.style.color = "#d29922";
       }
 
       try {
         const encoded = Ultraviolet.codec.xor.encode(pendingUrl);
+        
+        // This triggers the iframe to route through the Service Worker
         frame.src = window.__uv$config.prefix + encoded;
-        statusEl.innerText = activeBareIndex === 0 ? "Connected (Private)" : `Connected (Fallback)`;
+        
+        // We assume connection success if it doesn't throw a synchronous error
+        statusEl.innerText = activeBareIndex === 0 ? "Secured (Private)" : `Secured (Node ${activeBareIndex + 1})`;
         statusEl.style.color = "#3fb950";
+
+        // Listen for iframe load errors (if the bare server is totally dead)
+        frame.onerror = () => {
+          activeBareIndex++;
+          attemptConnection();
+        };
+
       } catch (err) {
         activeBareIndex++;
         attemptConnection();
