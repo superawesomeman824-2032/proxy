@@ -3,18 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Browser Hub - S++++ Tier Edition</title>
+  <title>Browser Hub - S++++ Tier Ultimate Edition</title>
   
   <!-- Ultraviolet Core Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
-  
+
   <script>
-    // GitHub Pages Base Path Resolution
+    // GitHub Pages Subpath Auto-Resolver
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
     const repoSubpath = (window.location.hostname.includes('github.io') && pathSegments.length > 0) 
       ? '/' + pathSegments[0] + '/' 
       : '/';
 
+    // Global Ultraviolet Configuration
     window.__uv$config = {
       prefix: repoSubpath + 'uv/service/',
       bare: 'https://bare-server-y5ch.onrender.com/bare/',
@@ -30,123 +31,161 @@
 
   <style>
     :root {
-      --bg-dark: #090d16;
-      --bg-header: #121824;
-      --bg-input: #000000;
-      --accent: #3b82f6;
-      --accent-hover: #60a5fa;
-      --border: #1e293b;
-      --text: #f8fafc;
-      --text-muted: #64748b;
-      --status-green: #10b981;
-      --status-yellow: #f59e0b;
-      --status-red: #ef4444;
+      --bg-darkest: #07090e;
+      --bg-header: #0f1319;
+      --bg-bar: #161b22;
+      --bg-input: #0d1117;
+      --bg-hover: #21262d;
+      --accent: #388bfd;
+      --accent-glow: rgba(56, 139, 253, 0.25);
+      --border: #30363d;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      width: 100%;
-      height: 100%;
-      background: var(--bg-dark);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: var(--text);
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-darkest);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, sans-serif;
+      color: var(--text-main);
       overflow: hidden;
     }
 
-    body { display: flex; flex-direction: column; }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
 
-    /* ANTI-NESTING RULE: Prevents stacking duplicate browser bars */
-    .is-nested #app-header { display: none !important; }
-    .is-nested #subtab-bar { display: none !important; }
-    .is-nested #workspace { height: 100vh !important; }
+    /* ==========================================
+       ANTI-NESTING / ANTI-STACKING CSS RULE
+       ========================================== */
+    body.is-nested-frame #browser-app-header {
+      display: none !important;
+    }
+    body.is-nested-frame #viewport-container {
+      height: 100vh !important;
+    }
 
-    /* --- TOP HEADER & TABS --- */
-    #app-header {
+    /* --- BROWSER HEADER & TABS --- */
+    #browser-app-header {
       background: var(--bg-header);
       border-bottom: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
       user-select: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+      z-index: 100;
     }
 
-    #main-tab-bar {
+    #tab-strip {
       display: flex;
       align-items: center;
-      background: #070a10;
-      padding: 6px 8px 0 8px;
-      gap: 4px;
+      background: var(--bg-darkest);
+      padding: 6px 10px 0 10px;
+      gap: 6px;
       overflow-x: auto;
     }
 
-    .tab {
+    #tab-strip::-webkit-scrollbar { height: 3px; }
+    #tab-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .browser-tab {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: #182232;
+      background: var(--bg-header);
       border: 1px solid var(--border);
       border-bottom: none;
-      padding: 6px 12px;
+      padding: 7px 14px;
       border-radius: 8px 8px 0 0;
       font-size: 12px;
+      font-weight: 500;
       color: var(--text-muted);
       cursor: pointer;
-      max-width: 180px;
-      min-width: 110px;
-      transition: all 0.15s ease;
+      max-width: 200px;
+      min-width: 120px;
+      transition: all 0.15s ease-in-out;
+      position: relative;
     }
 
-    .tab.active {
-      background: var(--bg-header);
-      color: var(--text);
-      border-top: 2px solid var(--accent);
+    .browser-tab:hover {
+      background: var(--bg-bar);
+      color: var(--text-main);
+    }
+
+    .browser-tab.active-tab {
+      background: var(--bg-bar);
+      color: var(--text-main);
+      border-color: var(--border);
+      border-bottom: 2px solid var(--accent);
       font-weight: 600;
     }
 
-    .tab-title {
+    .tab-icon {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    .tab-title-text {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       flex-grow: 1;
     }
 
-    .tab-close {
-      border-radius: 50%;
+    .tab-close-btn {
       width: 16px;
       height: 16px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      font-size: 12px;
+      color: var(--text-muted);
+      transition: all 0.15s;
     }
 
-    .tab-close:hover { background: rgba(239, 68, 68, 0.3); color: var(--status-red); }
+    .tab-close-btn:hover {
+      background: rgba(248, 81, 73, 0.2);
+      color: var(--red);
+    }
 
-    .add-tab-btn {
+    #add-tab-btn {
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-size: 16px;
+      font-size: 18px;
       padding: 4px 10px;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: 6px;
+      transition: all 0.15s;
     }
 
-    .add-tab-btn:hover { background: #1e293b; color: var(--text); }
+    #add-tab-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-main);
+    }
 
-    /* --- OMNIBOX NAVBAR --- */
-    #nav-bar {
-      padding: 8px 12px;
+    /* --- OMNIBOX & NAVIGATION CONTROL BAR --- */
+    #nav-controls-bar {
+      background: var(--bg-bar);
+      padding: 8px 14px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .nav-btn {
-      background: #182232;
+      background: var(--bg-input);
       border: 1px solid var(--border);
-      color: var(--text);
+      color: var(--text-main);
       width: 32px;
       height: 32px;
       border-radius: 6px;
@@ -155,72 +194,82 @@
       align-items: center;
       justify-content: center;
       font-size: 14px;
+      transition: all 0.15s;
     }
 
-    .nav-btn:hover { background: var(--accent); border-color: var(--accent-hover); }
+    .nav-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--text-muted);
+    }
 
-    #omnibox-form { flex-grow: 1; display: flex; }
+    #omnibox-form {
+      flex-grow: 1;
+      display: flex;
+    }
 
-    #omnibox {
+    #omnibox-input {
       width: 100%;
-      height: 32px;
-      padding: 0 12px;
+      height: 34px;
+      padding: 0 14px;
       border-radius: 6px;
       border: 1px solid var(--border);
       background: var(--bg-input);
-      color: var(--text);
+      color: var(--text-main);
       outline: none;
-      font-size: 13px;
+      font-size: 13.5px;
+      transition: all 0.2s ease;
     }
 
-    #omnibox:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+    #omnibox-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
 
-    #status-badge {
+    #status-pill {
       font-size: 11px;
       font-weight: 600;
-      padding: 4px 8px;
+      padding: 4px 10px;
       border-radius: 12px;
-      background: #000;
+      background: var(--bg-input);
       border: 1px solid var(--border);
+      color: var(--text-muted);
       white-space: nowrap;
     }
 
-    /* --- TABS INSIDE TABS (SUB-TAB BAR) --- */
-    #subtab-bar {
-      background: #0d131f;
-      padding: 4px 12px;
+    /* --- SPEED DIAL BOOKMARKS BAR --- */
+    #quick-bookmarks {
+      background: var(--bg-bar);
+      padding: 2px 14px 8px 14px;
       display: flex;
-      align-items: center;
-      gap: 6px;
+      gap: 8px;
+      overflow-x: auto;
       border-bottom: 1px solid var(--border);
     }
 
-    .subtab-label {
-      font-size: 11px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-weight: bold;
-      margin-right: 6px;
-    }
-
-    .subtab {
-      background: #182232;
+    .bookmark-btn {
+      background: var(--bg-input);
       border: 1px solid var(--border);
       color: var(--text-muted);
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 14px;
+      font-size: 11.5px;
       cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
-    .subtab.active { background: var(--accent); color: #fff; border-color: var(--accent-hover); }
+    .bookmark-btn:hover {
+      color: var(--text-main);
+      border-color: var(--accent);
+      background: var(--bg-hover);
+      transform: translateY(-1px);
+    }
 
-    /* --- WORKSPACE & FRAMES --- */
-    #workspace {
+    /* --- VIEWPORT CONTAINER --- */
+    #viewport-container {
       flex-grow: 1;
       width: 100%;
       position: relative;
@@ -235,88 +284,101 @@
       background: #ffffff;
     }
 
-    .browser-frame.active { display: block; }
+    .browser-frame.active-frame {
+      display: block;
+    }
 
-    /* --- SPEED DIAL / NEW TAB PAGE --- */
-    .speed-dial-page {
+    /* NEW TAB HOMEPAGE STYLING */
+    .new-tab-page {
       width: 100%;
       height: 100%;
-      background: var(--bg-dark);
+      background: var(--bg-darkest);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 20px;
-      color: var(--text);
+      gap: 24px;
+      color: var(--text-main);
     }
 
     .speed-dial-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 15px;
+      gap: 16px;
       max-width: 600px;
+      width: 90%;
     }
 
     .speed-card {
-      background: #121824;
+      background: var(--bg-header);
       border: 1px solid var(--border);
-      padding: 15px;
-      border-radius: 8px;
+      padding: 20px;
+      border-radius: 12px;
       text-align: center;
       cursor: pointer;
       transition: all 0.2s;
     }
 
-    .speed-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .speed-card:hover {
+      border-color: var(--accent);
+      background: var(--bg-hover);
+      transform: translateY(-3px);
+    }
   </style>
 </head>
 <body>
 
-  <div id="app-header">
-    <div id="main-tab-bar">
-      <div id="tabs-container" style="display:flex; gap:4px;"></div>
-      <button class="add-tab-btn" onclick="createNewMainTab()" title="New Main Tab">+</button>
+  <!-- BROWSER TOP UI CONTAINER -->
+  <div id="browser-app-header">
+    <div id="tab-strip">
+      <div id="tabs-container" style="display:flex; gap:6px;"></div>
+      <button id="add-tab-btn" onclick="openNewTab()" title="New Tab">+</button>
     </div>
 
-    <div id="nav-bar">
-      <button class="nav-btn" onclick="activeGoBack()" title="Back">&#8592;</button>
-      <button class="nav-btn" onclick="activeGoForward()" title="Forward">&#8594;</button>
-      <button class="nav-btn" onclick="activeReload()" title="Reload">&#8635;</button>
+    <div id="nav-controls-bar">
+      <button class="nav-btn" onclick="goBackTab()" title="Back">&#8592;</button>
+      <button class="nav-btn" onclick="goForwardTab()" title="Forward">&#8594;</button>
+      <button class="nav-btn" onclick="reloadTab()" title="Reload">&#8635;</button>
       
-      <form id="omnibox-form" onsubmit="handleNavigation(event)">
-        <input type="text" id="omnibox" placeholder="Search Google or type a web address..." autocomplete="off">
+      <form id="omnibox-form" onsubmit="submitSearch(event)">
+        <input type="text" id="omnibox-input" placeholder="Search Google or type a web address..." autocomplete="off">
       </form>
 
-      <div id="status-badge">System Initializing</div>
+      <div id="status-pill">System Ready</div>
     </div>
 
-    <div id="subtab-bar">
-      <span class="subtab-label">Nested Sub-Tabs:</span>
-      <div id="subtabs-container" style="display:flex; gap:4px;"></div>
-      <button class="add-tab-btn" onclick="createNewSubTab()" title="New Sub-Tab Inside Current Tab" style="font-size:12px;">+ Add Sub-Tab</button>
+    <div id="quick-bookmarks">
+      <div class="bookmark-btn" onclick="quickLaunch('https://google.com')">🔍 Google</div>
+      <div class="bookmark-btn" onclick="quickLaunch('https://youtube.com')">▶️ YouTube</div>
+      <div class="bookmark-btn" onclick="quickLaunch('https://discord.com')">💬 Discord</div>
+      <div class="bookmark-btn" onclick="quickLaunch('https://reddit.com')">🤖 Reddit</div>
+      <div class="bookmark-btn" onclick="quickLaunch('https://wikipedia.org')">📚 Wikipedia</div>
+      <div class="bookmark-btn" onclick="quickLaunch('https://github.com')">🐙 GitHub</div>
     </div>
   </div>
 
-  <div id="workspace"></div>
+  <!-- IFRAME VIEWPORT AREA -->
+  <div id="viewport-container"></div>
 
   <script>
     // ==========================================
-    // 1. SMART CROSS-ORIGIN ANTI-NESTING GUARD
+    // 1. SMART CROSS-ORIGIN ANTI-NESTING LOCK
     // ==========================================
     try {
       if (window.self !== window.top) {
+        // Check if page loaded inside another instance of itself on the same hostname
         if (window.parent.location.hostname === window.location.hostname) {
-          document.documentElement.classList.add('is-nested');
+          document.body.classList.add('is-nested-frame');
         }
       }
     } catch (e) {
-      // Safely embedded inside Google Sites or external iframe
+      // Cross-origin context (e.g. embedded inside Google Sites). Keep full UI visible!
     }
 
     // ==========================================
-    // 2. HYDRA NETWORK BARE ENDPOINTS (20 Node Pool)
+    // 2. HYDRA NETWORK (20 Failover Bare Servers)
     // ==========================================
-    const bareNodes = [
+    const bareFailoverPool = [
       'https://bare-server-y5ch.onrender.com/bare/',
       'https://tomp.app/bare/',
       'https://bare.benrovers.noc.st/bare/',
@@ -329,235 +391,207 @@
       'https://bare.mathstudy.app/bare/',
       'https://bare.z1g.top/bare/',
       'https://d.tomp.app/bare/',
-      'https://bare.titaniumnetwork.org/bare/'
+      'https://bare.titaniumnetwork.org/bare/',
+      'https://e.tomp.app/bare/',
+      'https://bare-server.mathstudy.app/bare/'
     ];
 
     let activeBareIndex = 0;
-    let mainTabs = [];
-    let activeMainTabId = null;
+    let tabsList = [];
+    let currentTabId = null;
 
-    const statusBadge = document.getElementById('status-badge');
-    const omnibox = document.getElementById('omnibox');
+    const statusPill = document.getElementById('status-pill');
+    const omniboxInput = document.getElementById('omnibox-input');
     const tabsContainer = document.getElementById('tabs-container');
-    const subtabsContainer = document.getElementById('subtabs-container');
-    const workspace = document.getElementById('workspace');
+    const viewportContainer = document.getElementById('viewport-container');
 
-    // Register Service Worker
-    async function initWorker() {
+    // Register UV Service Worker
+    async function initServiceWorker() {
       if ('serviceWorker' in navigator) {
         try {
           await navigator.serviceWorker.register(window.__uv$config.sw, { scope: window.__uv$config.prefix });
           await navigator.serviceWorker.ready;
-          setStatus("System Ready", "var(--status-green)");
-        } catch (e) {
-          setStatus("SW Pending", "var(--status-yellow)");
+          setStatus("System Ready", "var(--green)");
+        } catch (err) {
+          setStatus("Service Worker Error", "var(--yellow)");
         }
       }
     }
-    initWorker();
+    initServiceWorker();
 
     function setStatus(msg, color) {
-      statusBadge.innerText = msg;
-      statusBadge.style.color = color;
+      statusPill.innerText = msg;
+      statusPill.style.color = color;
     }
 
     // ==========================================
-    // 3. TABS INSIDE TABS MANAGER
+    // 3. MULTI-TAB ARCHITECTURE & MANAGEMENT
     // ==========================================
-    function createNewMainTab() {
-      const mainId = 'main-' + Math.random().toString(36).substr(2, 9);
-      const newMainTab = { id: mainId, title: 'New Tab', subTabs: [], activeSubId: null };
-      
-      mainTabs.push(newMainTab);
-      switchMainTab(mainId);
-      createNewSubTab(); // Auto-create first sub-tab
-    }
+    function openNewTab(url = '') {
+      const id = 'tab-' + Math.random().toString(36).substr(2, 9);
 
-    function createNewSubTab(url = '') {
-      const currentMain = mainTabs.find(m => m.id === activeMainTabId);
-      if (!currentMain) return;
-
-      const subId = 'sub-' + Math.random().toString(36).substr(2, 9);
+      // Create dedicated iframe for this tab
       const frame = document.createElement('iframe');
       frame.className = 'browser-frame';
-      frame.id = 'frame-' + subId;
-      workspace.appendChild(frame);
+      frame.id = 'frame-' + id;
+      viewportContainer.appendChild(frame);
 
-      const subTabData = { id: subId, title: 'Blank', url: url, frame: frame };
-      currentMain.subTabs.push(subTabData);
+      const tabObject = { id: id, title: 'New Tab', url: url, frame: frame };
+      tabsList.push(tabObject);
 
-      switchSubTab(subId);
+      setActiveTab(id);
 
       if (url) {
-        navigate(subTabData, url);
+        processNavigation(tabObject, url);
       }
     }
 
-    function switchMainTab(mainId) {
-      activeMainTabId = mainId;
-      renderTabs();
-      
-      const currentMain = mainTabs.find(m => m.id === mainId);
-      if (currentMain && currentMain.activeSubId) {
-        switchSubTab(currentMain.activeSubId);
-      }
-    }
+    function setActiveTab(id) {
+      currentTabId = id;
 
-    function switchSubTab(subId) {
-      const currentMain = mainTabs.find(m => m.id === activeMainTabId);
-      if (!currentMain) return;
-
-      currentMain.activeSubId = subId;
-
-      // Update Frame visibility
-      document.querySelectorAll('.browser-frame').forEach(f => f.classList.remove('active'));
-      const activeSub = currentMain.subTabs.find(s => s.id === subId);
-      if (activeSub) {
-        activeSub.frame.classList.add('active');
-        omnibox.value = activeSub.url || '';
-      }
-
-      renderTabs();
-    }
-
-    function renderTabs() {
-      // Render Main Tabs
-      tabsContainer.innerHTML = '';
-      mainTabs.forEach(m => {
-        const tabEl = document.createElement('div');
-        tabEl.className = `tab ${m.id === activeMainTabId ? 'active' : ''}`;
-        tabEl.onclick = () => switchMainTab(m.id);
-
-        const title = document.createElement('span');
-        title.className = 'tab-title';
-        title.innerText = m.title;
-
-        const close = document.createElement('span');
-        close.className = 'tab-close';
-        close.innerHTML = '&times;';
-        close.onclick = (e) => closeMainTab(m.id, e);
-
-        tabEl.appendChild(title);
-        tabEl.appendChild(close);
-        tabsContainer.appendChild(tabEl);
+      tabsList.forEach(t => {
+        const isActive = t.id === id;
+        t.frame.classList.toggle('active-frame', isActive);
       });
 
-      // Render Sub-Tabs for active Main Tab
-      subtabsContainer.innerHTML = '';
-      const currentMain = mainTabs.find(m => m.id === activeMainTabId);
-      if (currentMain) {
-        currentMain.subTabs.forEach(s => {
-          const subEl = document.createElement('div');
-          subEl.className = `subtab ${s.id === currentMain.activeSubId ? 'active' : ''}`;
-          subEl.innerText = s.title;
-          subEl.onclick = () => switchSubTab(s.id);
+      renderTabStrip();
 
-          subtabsContainer.appendChild(subEl);
-        });
-      }
+      const activeObj = tabsList.find(t => t.id === id);
+      omniboxInput.value = activeObj && activeObj.url ? activeObj.url : '';
     }
 
-    function closeMainTab(mainId, e) {
+    function closeTab(id, e) {
       if (e) e.stopPropagation();
-      if (mainTabs.length === 1) return;
+      if (tabsList.length === 1) return; // Always keep 1 tab open
 
-      const idx = mainTabs.findIndex(m => m.id === mainId);
-      const target = mainTabs[idx];
+      const index = tabsList.findIndex(t => t.id === id);
+      const targetTab = tabsList[index];
 
-      target.subTabs.forEach(s => s.frame.remove());
-      mainTabs.splice(idx, 1);
+      targetTab.frame.remove();
+      tabsList.splice(index, 1);
 
-      const nextMain = mainTabs[Math.max(0, idx - 1)];
-      switchMainTab(nextMain.id);
+      if (currentTabId === id) {
+        const fallback = tabsList[Math.max(0, index - 1)];
+        setActiveTab(fallback.id);
+      } else {
+        renderTabStrip();
+      }
+    }
+
+    function renderTabStrip() {
+      tabsContainer.innerHTML = '';
+      tabsList.forEach(t => {
+        const tabEl = document.createElement('div');
+        tabEl.className = `browser-tab ${t.id === currentTabId ? 'active-tab' : ''}`;
+        tabEl.onclick = () => setActiveTab(t.id);
+
+        const icon = document.createElement('span');
+        icon.className = 'tab-icon';
+        icon.innerText = '🌐';
+
+        const title = document.createElement('span');
+        title.className = 'tab-title-text';
+        title.innerText = t.title || 'New Tab';
+
+        const closeBtn = document.createElement('span');
+        closeBtn.className = 'tab-close-btn';
+        closeBtn.innerHTML = '&times;';
+        closeBtn.onclick = (e) => closeTab(t.id, e);
+
+        tabEl.appendChild(icon);
+        tabEl.appendChild(title);
+        tabEl.appendChild(closeBtn);
+        tabsContainer.appendChild(tabEl);
+      });
     }
 
     // ==========================================
-    // 4. PROXY ROUTING ENGINE
+    // 4. URL PARSER & BARE PROXY ROUTING
     // ==========================================
-    function handleNavigation(e) {
+    function submitSearch(e) {
       if (e) e.preventDefault();
-      const val = omnibox.value.trim();
-      if (!val) return;
+      const query = omniboxInput.value.trim();
+      if (!query) return;
 
-      let targetUrl = val;
-      if (!val.startsWith('http://') && !val.startsWith('https://')) {
-        targetUrl = val.includes('.') && !val.includes(' ') 
-          ? 'https://' + val 
-          : 'https://www.google.com/search?q=' + encodeURIComponent(val);
+      let target = query;
+      if (!query.startsWith('http://') && !query.startsWith('https://')) {
+        if (query.includes('.') && !query.includes(' ')) {
+          target = 'https://' + query;
+        } else {
+          target = 'https://www.google.com/search?q=' + encodeURIComponent(query);
+        }
       }
 
-      const currentMain = mainTabs.find(m => m.id === activeMainTabId);
-      if (currentMain) {
-        const currentSub = currentMain.subTabs.find(s => s.id === currentMain.activeSubId);
-        if (currentSub) navigate(currentSub, targetUrl);
+      const activeTab = tabsList.find(t => t.id === currentTabId);
+      if (activeTab) {
+        processNavigation(activeTab, target);
       }
     }
 
-    async function navigate(subTab, url) {
-      subTab.url = url;
-      subTab.title = url.replace('https://', '').replace('www.', '').split('/')[0];
-      
-      const currentMain = mainTabs.find(m => m.id === activeMainTabId);
-      if (currentMain) currentMain.title = subTab.title;
-      
-      renderTabs();
-
-      activeBareIndex = 0;
-      executeBareRoute(subTab, url);
+    function quickLaunch(url) {
+      omniboxInput.value = url;
+      submitSearch();
     }
 
-    async function executeBareRoute(subTab, targetUrl) {
-      if (activeBareIndex >= bareNodes.length) {
-        setStatus("All Nodes Failed", "var(--status-red)");
+    async function processNavigation(tabObj, targetUrl) {
+      tabObj.url = targetUrl;
+      tabObj.title = targetUrl.replace('https://', '').replace('http://', '').replace('www.', '').split('/')[0];
+      renderTabStrip();
+
+      activeBareIndex = 0; // Start with main private Bare server
+      connectThroughBarePool(tabObj, targetUrl);
+    }
+
+    async function connectThroughBarePool(tabObj, destination) {
+      if (activeBareIndex >= bareFailoverPool.length) {
+        setStatus("All Nodes Offline", "var(--red)");
         return;
       }
 
-      const endpoint = bareNodes[activeBareIndex];
-      window.__uv$config.bare = endpoint;
+      const currentBare = bareFailoverPool[activeBareIndex];
+      window.__uv$config.bare = currentBare;
 
       if (activeBareIndex === 0) {
-        setStatus("Connecting...", "var(--status-yellow)");
-        try { await fetch(endpoint, { method: 'GET', mode: 'no-cors' }).catch(() => {}); } catch(e){}
+        setStatus("Waking Server...", "var(--yellow)");
+        try { await fetch(currentBare, { method: 'GET', mode: 'no-cors' }).catch(() => {}); } catch(e) {}
       } else {
-        setStatus(`Node ${activeBareIndex + 1}/${bareNodes.length}`, "var(--status-yellow)");
+        setStatus(`Failover Node ${activeBareIndex + 1}`, "var(--yellow)");
       }
 
       try {
-        const encoded = Ultraviolet.codec.xor.encode(targetUrl);
-        subTab.frame.src = window.__uv$config.prefix + encoded;
-        setStatus(activeBareIndex === 0 ? "Secured (Private)" : `Connected (Node ${activeBareIndex + 1})`, "var(--status-green)");
+        const encoded = Ultraviolet.codec.xor.encode(destination);
+        tabObj.frame.src = window.__uv$config.prefix + encoded;
+
+        setStatus(activeBareIndex === 0 ? "Protected (Private)" : `Protected (Node ${activeBareIndex + 1})`, "var(--green)");
+
+        tabObj.frame.onerror = () => {
+          activeBareIndex++;
+          connectThroughBarePool(tabObj, destination);
+        };
+
       } catch (err) {
         activeBareIndex++;
-        executeBareRoute(subTab, targetUrl);
+        connectThroughBarePool(tabObj, destination);
       }
     }
 
-    function activeGoBack() {
-      const currentMain = mainTabs.find(m => m.id === activeMainTabId);
-      if (currentMain) {
-        const currentSub = currentMain.subTabs.find(s => s.id === currentMain.activeSubId);
-        if (currentSub) try { currentSub.frame.contentWindow.history.back(); } catch(e){}
-      }
+    function goBackTab() {
+      const cur = tabsList.find(t => t.id === currentTabId);
+      if (cur) try { cur.frame.contentWindow.history.back(); } catch(e){}
     }
 
-    function activeGoForward() {
-      const currentMain = mainTabs.find(m => m.id === activeMainTabId);
-      if (currentMain) {
-        const currentSub = currentMain.subTabs.find(s => s.id === currentMain.activeSubId);
-        if (currentSub) try { currentSub.frame.contentWindow.history.forward(); } catch(e){}
-      }
+    function goForwardTab() {
+      const cur = tabsList.find(t => t.id === currentTabId);
+      if (cur) try { cur.frame.contentWindow.history.forward(); } catch(e){}
     }
 
-    function activeReload() {
-      const currentMain = mainTabs.find(m => m.id === activeMainTabId);
-      if (currentMain) {
-        const currentSub = currentMain.subTabs.find(s => s.id === currentMain.activeSubId);
-        if (currentSub) try { currentSub.frame.contentWindow.location.reload(); } catch(e){}
-      }
+    function reloadTab() {
+      const cur = tabsList.find(t => t.id === currentTabId);
+      if (cur) try { cur.frame.contentWindow.location.reload(); } catch(e){}
     }
 
-    // Boot up first main tab
-    createNewMainTab();
+    // Launch initial tab
+    openNewTab();
   </script>
 </body>
 </html>
