@@ -1,20 +1,31 @@
-importScripts('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js');
-importScripts('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.handler.js');
-importScripts('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.client.js');
-importScripts('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.sw.js');
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
 
-const uv = new UVServiceWorker();
-
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', () => self.clients.claim());
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
 
 self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        (async () => {
-            if (uv.route(event)) {
-                return await uv.fetch(event);
-            }
-            return await fetch(event.request);
-        })()
-    );
+  const url = new URL(event.request.url);
+
+  // Intercept requests directed to /service/
+  if (url.pathname.startsWith('/service/')) {
+    const targetUrl = decodeURIComponent(url.pathname.replace('/service/', ''));
+
+    if (targetUrl) {
+      event.respondWith(
+        fetch(targetUrl, {
+          method: event.request.method,
+          headers: event.request.headers,
+          mode: 'cors'
+        }).catch(err => {
+          return new Response("Failed to reach target server: " + err.message, {
+            status: 502,
+            headers: { 'Content-Type': 'text/plain' }
+          });
+        })
+      );
+    }
+  }
 });
