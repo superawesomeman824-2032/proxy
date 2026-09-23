@@ -6,14 +6,16 @@
   <title>Proxy Hub</title>
   <script src="https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js"></script>
   <script>
+    // Auto-detect GitHub Pages repository subpath routing
     const pathSegments = window.location.pathname.split('/').filter(Boolean);
     const repoSubpath = (window.location.hostname.includes('github.io') && pathSegments.length > 0) 
       ? '/' + pathSegments[0] + '/' 
       : '/';
 
+    // Inlined configuration guarantees __uv$config is instantly available
     window.__uv$config = {
       prefix: repoSubpath + 'uv/service/',
-      bare: 'https://bare-server-y5ch.onrender.com/bare/',
+      bare: 'https://bare-server-y5ch.onrender.com/bare/', // Primary Private Render Server
       encodeUrl: Ultraviolet.codec.xor.encode,
       decodeUrl: Ultraviolet.codec.xor.decode,
       handler: 'https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.handler.js',
@@ -24,54 +26,143 @@
     };
   </script>
   <style>
-    body { margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #0f1117; font-family: sans-serif; color: #f0f6fc; overflow: hidden; }
-    #top-bar { background: #161b22; padding: 12px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #30363d; flex-shrink: 0; }
-    h1 { margin: 0; font-size: 18px; color: #58a6ff; }
-    #search-form { flex-grow: 1; max-width: 600px; }
-    input { width: 100%; padding: 8px 14px; border-radius: 6px; border: 1px solid #30363d; background: #0d1117; color: #f0f6fc; outline: none; font-size: 14px; }
-    input:focus { border-color: #58a6ff; }
-    #status { font-size: 12px; color: #8b949e; margin-left: auto; }
-    iframe { flex-grow: 1; border: none; width: 100%; height: 100%; background: #fff; }
+    :root {
+      --bg-main: #0f1117;
+      --bg-bar: #161b22;
+      --border: #30363d;
+      --text: #f0f6fc;
+      --accent: #58a6ff;
+      --success: #3fb950;
+      --error: #ff7b72;
+    }
+    body {
+      margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh;
+      background: var(--bg-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      color: var(--text); overflow: hidden;
+    }
+    #top-bar {
+      background: var(--bg-bar); padding: 12px 20px; display: flex; align-items: center; gap: 15px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    h1 { margin: 0; font-size: 18px; color: var(--accent); letter-spacing: 0.5px; }
+    #search-form { flex-grow: 1; max-width: 650px; }
+    input {
+      width: 100%; padding: 9px 14px; border-radius: 6px; border: 1px solid var(--border);
+      background: #0d1117; color: var(--text); outline: none; font-size: 14px; transition: border-color 0.2s;
+    }
+    input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15); }
+    #status { font-size: 12px; color: #8b949e; margin-left: auto; white-space: nowrap; font-weight: 500; }
+    iframe { flex-grow: 1; border: none; width: 100%; height: 100%; background: #ffffff; }
   </style>
 </head>
 <body>
+
   <div id="top-bar">
     <h1>Proxy Hub</h1>
-    <form id="search-form" onsubmit="loadURL(event)">
+    <form id="search-form" onsubmit="handleSearch(event)">
       <input type="text" id="url-input" placeholder="Type a website URL or search query..." autocomplete="off" autofocus>
     </form>
     <div id="status">Initializing...</div>
   </div>
+
   <iframe id="proxy-frame"></iframe>
+
   <script>
-    async function registerSW() {
+    // MULTIPLE BARE SERVER BACKUP LIST
+    const bareServers = [
+      'https://bare-server-y5ch.onrender.com/bare/', // Primary Private Render Server[cite: 2]
+      'https://tomp.app/',                          // Backup 1
+      'https://bare.benrovers.noc.st/'             // Backup 2
+    ];
+
+    let activeBareIndex = 0;
+    let pendingUrl = '';
+
+    // Initialize Service Worker immediately
+    async function initServiceWorker() {
       if (!('serviceWorker' in navigator)) return;
       try {
         await navigator.serviceWorker.register('./sw.js', { scope: window.__uv$config.prefix });
         await navigator.serviceWorker.ready;
-        document.getElementById('status').innerText = "Connected";
-        document.getElementById('status').style.color = "#3fb950";
+        updateStatus("Ready (Multi-Fallback Armed)", "#8b949e");
       } catch (err) {
-        console.error("SW error:", err);
-        document.getElementById('status').innerText = "Connection Error";
+        updateStatus("Service Worker Error", "var(--error)");
       }
     }
-    registerSW();
+    initServiceWorker();
 
-    async function loadURL(e) {
+    function updateStatus(text, color = "#8b949e") {
+      const statusEl = document.getElementById('status');
+      statusEl.innerText = text;
+      statusEl.style.color = color;
+    }
+
+    async function handleSearch(e) {
       if (e) e.preventDefault();
       let val = document.getElementById('url-input').value.trim();
       if (!val) return;
 
-      let targetUrl = val.startsWith('http://') || val.startsWith('https://') 
+      pendingUrl = val.startsWith('http://') || val.startsWith('https://') 
         ? val 
         : (val.includes('.') && !val.includes(' ') ? 'https://' + val : 'https://www.google.com/search?q=' + encodeURIComponent(val));
 
-      document.getElementById('status').innerText = "Loading...";
-      await navigator.serviceWorker.ready;
+      activeBareIndex = 0; // Reset to primary private server
+      attemptConnection();
+    }
 
-      const encoded = Ultraviolet.codec.xor.encode(targetUrl);
-      document.getElementById('proxy-frame').src = window.__uv$config.prefix + encoded;
+    async function attemptConnection() {
+      if (activeBareIndex >= bareServers.length) {
+        updateStatus("Error: All primary and backup servers failed.", "var(--error)");
+        return;
+      }
+
+      const currentBare = bareServers[activeBareIndex];
+      window.__uv$config.bare = currentBare;
+
+      if (activeBareIndex === 0) {
+        updateStatus("Connecting to private Render server...", "var(--accent)");
+      } else {
+        updateStatus(`Private server sleeping/unresponsive. Trying fallback #${activeBareIndex}...`, "orange");
+      }
+
+      if ('serviceWorker' in navigator) {
+        try {
+          await navigator.serviceWorker.register('./sw.js', { scope: window.__uv$config.prefix });
+          await navigator.serviceWorker.ready;
+        } catch (err) {
+          console.warn("SW warning:", err);
+        }
+      }
+
+      try {
+        const encoded = Ultraviolet.codec.xor.encode(pendingUrl);
+        const frame = document.getElementById('proxy-frame');
+        
+        let loadedSuccessfully = false;
+        
+        frame.onload = () => {
+          loadedSuccessfully = true;
+          if (activeBareIndex === 0) {
+            updateStatus("Connected (Private Render Server)", "var(--success)");
+          } else {
+            updateStatus(`Connected (Fallback Server #${activeBareIndex})`, "var(--success)");
+          }
+        };
+
+        frame.src = window.__uv$config.prefix + encoded;
+
+        // Fallback Timeout: If it takes longer than 7 seconds, automatically switch to the next server
+        setTimeout(() => {
+          if (!loadedSuccessfully && activeBareIndex < bareServers.length - 1) {
+            activeBareIndex++;
+            attemptConnection();
+          }
+        }, 7000);
+
+      } catch (err) {
+        activeBareIndex++;
+        attemptConnection();
+      }
     }
   </script>
 </body>
